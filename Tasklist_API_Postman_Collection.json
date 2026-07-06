@@ -1,0 +1,928 @@
+{
+  "info": {
+    "name": "Tasklist API Collection",
+    "description": "Collection untuk API Tasklist dengan fitur filtering by user ID, project ID, dan approval system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://192.168.1.10:3000",
+      "type": "string"
+    },
+    {
+      "key": "sessionToken",
+      "value": "your-session-token-here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Get All Tasklist",
+      "item": [
+        {
+          "name": "Get All Tasks (Basic)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by User ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?pegawaiId=3",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "3",
+                  "description": "Filter by user/pegawai ID"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by Project ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?projectId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "1",
+                  "description": "Filter by project ID"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by User and Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?pegawaiId=3&projectId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "3",
+                  "description": "Filter by user ID"
+                },
+                {
+                  "key": "projectId",
+                  "value": "1",
+                  "description": "Filter by project ID"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks with Pagination",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?page=1&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?status=SEDANG_DIPROSES_USER",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SEDANG_DIPROSES_USER",
+                  "description": "Filter by single status"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by Multiple Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?status=SEDANG_DIPROSES_USER,MENUNGGU_REVIEW_PM",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SEDANG_DIPROSES_USER,MENUNGGU_REVIEW_PM",
+                  "description": "Filter by multiple statuses (comma-separated)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?from=2026-03-01&to=2026-03-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-03-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-03-31",
+                  "description": "End date (YYYY-MM-DD)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by Module",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?moduleId=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "moduleId",
+                  "value": "2",
+                  "description": "Filter by module ID"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks by Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?tasklistType=DEVELOPMENT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "tasklistType",
+                  "value": "DEVELOPMENT",
+                  "description": "Filter by task type (BLUEPRINT, DEVELOPMENT, MAINTENANCE)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks with Sorting",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?sortKey=scheduleAt&sortDir=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "sortKey",
+                  "value": "scheduleAt",
+                  "description": "Field to sort by"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc",
+                  "description": "Sort direction (asc/desc)"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Approval System (PM/Manager)",
+      "item": [
+        {
+          "name": "Get Approval Queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/approval-queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "approval-queue"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Approval Queue with Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/approval-queue?projectId=1&page=1&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "approval-queue"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "1",
+                  "description": "Filter by project ID"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Approval Queue by Assignee",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/approval-queue?pegawaiId=3&sortKey=scheduleAt&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "approval-queue"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "3",
+                  "description": "Filter by assignee ID"
+                },
+                {
+                  "key": "sortKey",
+                  "value": "scheduleAt",
+                  "description": "Sort by schedule date"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "asc",
+                  "description": "Sort direction (oldest first)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Approval Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/approval-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "approval-stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Approval Stats for Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/approval-stats?projectId=1&period=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "approval-stats"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "1",
+                  "description": "Filter by project ID"
+                },
+                {
+                  "key": "period",
+                  "value": "30",
+                  "description": "Period in days (default: 30, max: 365)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Weekly Approval Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/approval-stats?period=7",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "approval-stats"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "7",
+                  "description": "Last 7 days statistics"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Get Tasklist by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "session={{sessionToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasklist/123",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "tasklist", "123"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Task Status Management",
+      "item": [
+        {
+          "name": "Start Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SEDANG_DIPROSES_USER\",\n  \"keterangan\": \"Starting to work on this task\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit for Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"MENUNGGU_REVIEW_PM\",\n  \"keterangan\": \"Task completed, ready for review\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SEDANG_DIPROSES_USER_PAUSED\",\n  \"keterangan\": \"Pausing task temporarily\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SEDANG_DIPROSES_USER\",\n  \"keterangan\": \"Resuming work on this task\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Task Approval Actions",
+      "item": [
+        {
+          "name": "Approve Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"SELESAI\",\n  \"keterangan\": \"Task approved - excellent work!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"MENUNGGU_PROSES_USER\",\n  \"keterangan\": \"Please fix the following issues: 1. Add proper error handling, 2. Update documentation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve with Attachment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "status",
+                  "value": "SELESAI",
+                  "type": "text"
+                },
+                {
+                  "key": "keterangan",
+                  "value": "Task approved with screenshot attachment",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist", "123"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Complex Filters",
+      "item": [
+        {
+          "name": "Get My Tasks in Specific Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?pegawaiId=3&projectId=1&status=SEDANG_DIPROSES_USER,MENUNGGU_REVIEW_PM",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "3",
+                  "description": "My user ID"
+                },
+                {
+                  "key": "projectId",
+                  "value": "1",
+                  "description": "Specific project"
+                },
+                {
+                  "key": "status",
+                  "value": "SEDANG_DIPROSES_USER,MENUNGGU_REVIEW_PM",
+                  "description": "Active statuses only"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks for Review (PM)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?status=MENUNGGU_REVIEW_PM&projectId=1&sortKey=scheduleAt&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "MENUNGGU_REVIEW_PM",
+                  "description": "Tasks waiting for review"
+                },
+                {
+                  "key": "projectId",
+                  "value": "1",
+                  "description": "My project"
+                },
+                {
+                  "key": "sortKey",
+                  "value": "scheduleAt",
+                  "description": "Sort by schedule"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "asc",
+                  "description": "Oldest first"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Overdue Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?to=2026-03-22&status=SEDANG_DIPROSES_USER,MENUNGGU_REVIEW_PM&sortKey=scheduleAt&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "to",
+                  "value": "2026-03-22",
+                  "description": "Tasks scheduled before today"
+                },
+                {
+                  "key": "status",
+                  "value": "SEDANG_DIPROSES_USER,MENUNGGU_REVIEW_PM",
+                  "description": "Incomplete tasks"
+                },
+                {
+                  "key": "sortKey",
+                  "value": "scheduleAt",
+                  "description": "Sort by schedule"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "asc",
+                  "description": "Most overdue first"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Development Tasks This Month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session={{sessionToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasklist?tasklistType=DEVELOPMENT&from=2026-03-01&to=2026-03-31&page=1&size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasklist"],
+              "query": [
+                {
+                  "key": "tasklistType",
+                  "value": "DEVELOPMENT",
+                  "description": "Development tasks only"
+                },
+                {
+                  "key": "from",
+                  "value": "2026-03-01",
+                  "description": "Start of March"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-03-31",
+                  "description": "End of March"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "First page"
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "50 items per page"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set dynamic variables if needed",
+          "// pm.environment.set('timestamp', Date.now());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Basic response validation",
+          "pm.test('Status code is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "",
+          "pm.test('Response has valid JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "",
+          "// Log response for debugging",
+          "console.log('Response:', pm.response.json());"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "Logbook External API - Departments & Users",
+    "description": "Complete CRUD operations for Departments (Tenants) and Users via external API.\n\nAuthentication: All requests require `x-api-key` header with the LOGBOOK_API_KEY value.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "x-api-key", "type": "string" },
+      { "key": "value", "value": "{{api_key}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000", "type": "string" },
+    { "key": "api_key", "value": "YOUR_LOGBOOK_API_KEY", "type": "string" },
+    { "key": "tenant_id", "value": "", "type": "string" },
+    { "key": "portal_tenant_id", "value": "", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" },
+    { "key": "sso_user_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Departments (Tenants)",
+      "item": [
+        {
+          "name": "List All Tenants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/tenants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tenants"]
+            },
+            "description": "Get all departments/tenants. Returns an array of tenants with their portalTenantId, name, description, isActive status."
+          }
+        },
+        {
+          "name": "Create or Update Tenant (Upsert)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"portalTenantId\": \"TENANT-001\",\n  \"name\": \"Engineering Department\",\n  \"description\": \"Software Engineering Team\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/tenants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tenants"]
+            },
+            "description": "Create a new tenant or update if portalTenantId already exists. Supports webhook format too: { event, data: { ... }, timestamp }"
+          }
+        },
+        {
+          "name": "Get Tenant by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/tenants/{{tenant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tenants", "{{tenant_id}}"]
+            },
+            "description": "Get a single tenant by logbook numeric ID or portalTenantId (idDep)."
+          }
+        },
+        {
+          "name": "Get Tenant by portalTenantId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/tenants/{{portal_tenant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tenants", "{{portal_tenant_id}}"]
+            },
+            "description": "Get a single tenant by portalTenantId string (e.g. TENANT-001)."
+          }
+        },
+        {
+          "name": "Update Tenant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Engineering Department (Updated)\",\n  \"description\": \"Updated description\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/tenants/{{tenant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tenants", "{{tenant_id}}"]
+            },
+            "description": "Update tenant fields. All fields are optional: name, description, isActive. Can use logbook ID or portalTenantId."
+          }
+        },
+        {
+          "name": "Delete Tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/tenants/{{tenant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tenants", "{{tenant_id}}"]
+            },
+            "description": "Delete a tenant. Returns 409 if users are still linked to this department. Can use logbook ID or portalTenantId."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List All SSO Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/users?portalTenantId={{portal_tenant_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users"],
+              "query": [
+                { "key": "portalTenantId", "value": "{{portal_tenant_id}}", "description": "Optional. Filter users by tenant." }
+              ]
+            },
+            "description": "Get all SSO users. Optionally filter by portalTenantId."
+          }
+        },
+        {
+          "name": "Create or Update User (Upsert)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ssoUserId\": \"uuid-from-portal-001\",\n  \"portalTenantId\": \"TENANT-001\",\n  \"email\": \"john.doe@company.com\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"role\": \"Developer\",\n  \"phone\": \"08123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users"]
+            },
+            "description": "Create a new user or update if ssoUserId already exists. Requires tenant to exist first.\n\nSupported roles: Super Admin, Project Manager, Developer, Programmer, User, Admin"
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users", "{{user_id}}"]
+            },
+            "description": "Get a single user by logbook numeric ID, ssoUserId, or username."
+          }
+        },
+        {
+          "name": "Get User by ssoUserId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/users/{{sso_user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users", "{{sso_user_id}}"]
+            },
+            "description": "Get a single user by ssoUserId (UUID from Portal)."
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"portalTenantId\": \"TENANT-001\",\n  \"email\": \"john.doe@company.com\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe Updated\",\n  \"role\": \"Project Manager\",\n  \"phone\": \"08123456789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users", "{{user_id}}"]
+            },
+            "description": "Update user fields. All fields are optional. Can use logbook ID, ssoUserId, or username as identifier."
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users", "{{user_id}}"]
+            },
+            "description": "Delete a user. Can use logbook ID, ssoUserId, or username as identifier."
+          }
+        },
+        {
+          "name": "Lookup User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/users/lookup?username=john.doe@company.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "users", "lookup"],
+              "query": [
+                { "key": "username", "value": "john.doe@company.com", "description": "Lookup by username" },
+                { "key": "ssoUserId", "value": "", "description": "Or lookup by ssoUserId" }
+              ]
+            },
+            "description": "Quick lookup by username or ssoUserId. Returns minimal user info."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk Operations",
+      "item": [
+        {
+          "name": "Bulk Create Tenant & Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"departemen\": {\n    \"portalTenantId\": \"TENANT-001\",\n    \"name\": \"Engineering Department\",\n    \"description\": \"Software Engineering Team\",\n    \"isActive\": true\n  },\n  \"users\": [\n    {\n      \"ssoUserId\": \"uuid-from-portal-001\",\n      \"email\": \"john.doe@company.com\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"role\": \"Developer\",\n      \"phone\": \"08123456789\"\n    },\n    {\n      \"ssoUserId\": \"uuid-from-portal-002\",\n      \"email\": \"jane.smith@company.com\",\n      \"firstName\": \"Jane\",\n      \"lastName\": \"Smith\",\n      \"role\": \"Admin\",\n      \"phone\": \"08987654321\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/bulk",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "bulk"]
+            },
+            "description": "Bulk-create a tenant (department) and multiple users in one request.\n\n- Tenant is upserted by portalTenantId (created or updated)\n- Each user is upserted by ssoUserId (created or updated)\n- Partial success: if one user fails, others continue processing\n- Skipped users include an error field explaining why\n\nSupported roles: Super Admin, Project Manager, Developer, Programmer, User, Admin\n\nAlso supports webhook format: { event, data: { departemen: {...}, users: [...] }, timestamp }"
+          }
+        },
+        {
+          "name": "Bulk Create - Webhook Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"tenant.users.created\",\n  \"data\": {\n    \"departemen\": {\n      \"portalTenantId\": \"TENANT-001\",\n      \"name\": \"Engineering Department\",\n      \"description\": \"Software Engineering Team\",\n      \"isActive\": true\n    },\n    \"users\": [\n      {\n        \"ssoUserId\": \"uuid-from-portal-001\",\n        \"email\": \"john.doe@company.com\",\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"role\": \"Developer\",\n        \"phone\": \"08123456789\"\n      },\n      {\n        \"ssoUserId\": \"uuid-from-portal-002\",\n        \"email\": \"jane.smith@company.com\",\n        \"firstName\": \"Jane\",\n        \"lastName\": \"Smith\",\n        \"role\": \"Admin\",\n        \"phone\": \"08987654321\"\n      }\n    ]\n  },\n  \"timestamp\": \"2025-07-01T10:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/bulk",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "bulk"]
+            },
+            "description": "Same as Bulk Create Tenant & Users, but using the webhook payload format with event/data/timestamp wrapper. Useful for testing webhook-style integrations from Portal."
+          }
+        }
+      ]
+    }
+  ]
+}

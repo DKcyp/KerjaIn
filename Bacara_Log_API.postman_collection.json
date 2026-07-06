@@ -1,0 +1,660 @@
+{
+  "info": {
+    "name": "Bacara Log API",
+    "description": "API Collection untuk Bacara Log - Monitoring dan Audit Trail",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Get All Logs",
+      "item": [
+        {
+          "name": "Get Logs by Project (Required)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Filter berdasarkan Project ID (REQUIRED)"
+                }
+              ]
+            },
+            "description": "Mengambil semua log untuk project tertentu (projectId adalah required)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs by BA (Required)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?baId={{ba_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "{{ba_id}}",
+                  "description": "Filter berdasarkan BA ID (REQUIRED)"
+                }
+              ]
+            },
+            "description": "Mengambil semua log untuk BA tertentu (baId adalah required)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs - Project with Status Filter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}&statusBa=PENGAJUAN",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Project ID (REQUIRED)"
+                },
+                {
+                  "key": "statusBa",
+                  "value": "PENGAJUAN",
+                  "description": "Filter berdasarkan status BA (OPTIONAL)"
+                }
+              ]
+            },
+            "description": "Mengambil log project dengan filter status BA (optional)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs - BA with Status Filter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?baId={{ba_id}}&statusBa=DEVELOPMENT",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "{{ba_id}}",
+                  "description": "BA ID (REQUIRED)"
+                },
+                {
+                  "key": "statusBa",
+                  "value": "DEVELOPMENT",
+                  "description": "Filter berdasarkan status BA (OPTIONAL)"
+                }
+              ]
+            },
+            "description": "Mengambil log BA dengan filter status tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs with Pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}&page=1&limit=25",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Project ID (REQUIRED)"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Halaman yang ingin diambil"
+                },
+                {
+                  "key": "limit",
+                  "value": "25",
+                  "description": "Jumlah data per halaman"
+                }
+              ]
+            },
+            "description": "Mengambil log dengan custom pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Error Logs Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?baId={{ba_id}}&isError=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "{{ba_id}}",
+                  "description": "BA ID (REQUIRED)"
+                },
+                {
+                  "key": "isError",
+                  "value": "true",
+                  "description": "Filter hanya error logs"
+                }
+              ]
+            },
+            "description": "Mengambil hanya log yang error untuk debugging"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs by Action Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}&actionType=CREATE_BA",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Project ID (REQUIRED)"
+                },
+                {
+                  "key": "actionType",
+                  "value": "CREATE_BA",
+                  "description": "Filter berdasarkan action type"
+                }
+              ]
+            },
+            "description": "Mengambil log berdasarkan tipe aksi tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}&startDate={{month_start}}&endDate={{month_end}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Project ID (REQUIRED)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "{{month_start}}",
+                  "description": "Tanggal mulai (ISO 8601 format)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "{{month_end}}",
+                  "description": "Tanggal akhir (ISO 8601 format)"
+                }
+              ]
+            },
+            "description": "Mengambil log dalam rentang tanggal tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?baId={{ba_id}}&search=blueprint",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "{{ba_id}}",
+                  "description": "BA ID (REQUIRED)"
+                },
+                {
+                  "key": "search",
+                  "value": "blueprint",
+                  "description": "Pencarian di endpoint, actionDescription, errorMessage"
+                }
+              ]
+            },
+            "description": "Mencari log berdasarkan keyword"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs - Combined Filters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}&statusBa=PENGAJUAN&actionType=UPDATE_BA&isError=false&page=1&limit=25",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Project ID (REQUIRED)"
+                },
+                {
+                  "key": "statusBa",
+                  "value": "PENGAJUAN",
+                  "description": "Status BA (OPTIONAL)"
+                },
+                {
+                  "key": "actionType",
+                  "value": "UPDATE_BA"
+                },
+                {
+                  "key": "isError",
+                  "value": "false"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "25"
+                }
+              ]
+            },
+            "description": "Menggunakan multiple filters sekaligus"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs by User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?projectId={{project_id}}&userId={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Project ID (REQUIRED)"
+                },
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}",
+                  "description": "Filter berdasarkan User ID"
+                }
+              ]
+            },
+            "description": "Mengambil semua aktivitas user pada project tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs by HTTP Method",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?baId={{ba_id}}&httpMethod=POST",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "{{ba_id}}",
+                  "description": "BA ID (REQUIRED)"
+                },
+                {
+                  "key": "httpMethod",
+                  "value": "POST",
+                  "description": "Filter berdasarkan HTTP method"
+                }
+              ]
+            },
+            "description": "Mengambil log berdasarkan HTTP method"
+          },
+          "response": []
+        },
+        {
+          "name": "ERROR - Missing Required Filter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"]
+            },
+            "description": "Test error response ketika tidak ada projectId atau baId (akan return 400)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints untuk mengambil daftar log dengan berbagai filter. WAJIB menyertakan projectId atau baId."
+    },
+    {
+      "name": "Get Single Log",
+      "item": [
+        {
+          "name": "Get Log by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log/123",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log", "123"]
+            },
+            "description": "Mengambil detail lengkap log berdasarkan ID"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoint untuk mengambil detail single log"
+    },
+    {
+      "name": "Statistics",
+      "item": [
+        {
+          "name": "Get All Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log", "stats"]
+            },
+            "description": "Mengambil statistik lengkap dari semua log"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics by Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log/stats?projectId=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log", "stats"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "5",
+                  "description": "Filter statistik berdasarkan Project ID"
+                }
+              ]
+            },
+            "description": "Mengambil statistik untuk project tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics by BA",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log/stats?baId=123",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log", "stats"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "123",
+                  "description": "Filter statistik berdasarkan BA ID"
+                }
+              ]
+            },
+            "description": "Mengambil statistik untuk BA tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log/stats?startDate=2024-01-01&endDate=2024-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log", "stats"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01",
+                  "description": "Tanggal mulai"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31",
+                  "description": "Tanggal akhir"
+                }
+              ]
+            },
+            "description": "Mengambil statistik untuk rentang tanggal tertentu"
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints untuk statistik dan analytics"
+    },
+    {
+      "name": "Use Cases",
+      "item": [
+        {
+          "name": "UC1 - Monitor Today's Activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?startDate={{today_start}}&endDate={{today_end}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "{{today_start}}",
+                  "description": "Start of today"
+                },
+                {
+                  "key": "endDate",
+                  "value": "{{today_end}}",
+                  "description": "End of today"
+                }
+              ]
+            },
+            "description": "Monitor semua aktivitas hari ini"
+          },
+          "response": []
+        },
+        {
+          "name": "UC2 - Monitor Today's Errors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?isError=true&startDate={{today_start}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "isError",
+                  "value": "true"
+                },
+                {
+                  "key": "startDate",
+                  "value": "{{today_start}}"
+                }
+              ]
+            },
+            "description": "Monitor error yang terjadi hari ini"
+          },
+          "response": []
+        },
+        {
+          "name": "UC3 - BA Audit Trail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?baId={{ba_id}}&limit=100",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "baId",
+                  "value": "{{ba_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Lihat semua perubahan pada BA tertentu"
+          },
+          "response": []
+        },
+        {
+          "name": "UC4 - User Activity Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?userId={{user_id}}&startDate={{month_start}}&endDate={{month_end}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "{{month_start}}"
+                },
+                {
+                  "key": "endDate",
+                  "value": "{{month_end}}"
+                }
+              ]
+            },
+            "description": "Report aktivitas user dalam sebulan"
+          },
+          "response": []
+        },
+        {
+          "name": "UC5 - Performance Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log/stats?projectId={{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log", "stats"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}"
+                }
+              ]
+            },
+            "description": "Analisis performa project"
+          },
+          "response": []
+        },
+        {
+          "name": "UC6 - Debug Validation Errors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/bacara-log?isError=true&search=validation",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bacara-log"],
+              "query": [
+                {
+                  "key": "isError",
+                  "value": "true"
+                },
+                {
+                  "key": "search",
+                  "value": "validation"
+                }
+              ]
+            },
+            "description": "Cari semua validation errors"
+          },
+          "response": []
+        }
+      ],
+      "description": "Common use cases untuk Bacara Log API"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "5",
+      "type": "string"
+    },
+    {
+      "key": "ba_id",
+      "value": "123",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "today_start",
+      "value": "2024-01-15T00:00:00Z",
+      "type": "string"
+    },
+    {
+      "key": "today_end",
+      "value": "2024-01-15T23:59:59Z",
+      "type": "string"
+    },
+    {
+      "key": "month_start",
+      "value": "2024-01-01T00:00:00Z",
+      "type": "string"
+    },
+    {
+      "key": "month_end",
+      "value": "2024-01-31T23:59:59Z",
+      "type": "string"
+    }
+  ]
+}

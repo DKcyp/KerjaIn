@@ -1,0 +1,343 @@
+{
+  "info": {
+    "name": "Blueprint-Baru Flow",
+    "description": "API untuk 5 alur utama Blueprint-Baru:\n1. Tambah BA\n2. Pengajuan (Status Update)\n3. Riwayat RFC\n4. Resubmit RFC\n5. UAT External\n\nBase URL: https://log-dev.expressa.id",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://log-dev.expressa.id"
+    },
+    {
+      "key": "projectId",
+      "value": "1"
+    },
+    {
+      "key": "baId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Tambah BA",
+      "item": [
+        {
+          "name": "GET - Fetch Project Data + baFlatRows",
+          "description": "Ambil data proyek, BA list, modules, dan flat rows untuk edit modal.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}?type=BERITA_ACARA&view=logbook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}"],
+              "query": [
+                { "key": "type", "value": "BERITA_ACARA" },
+                { "key": "view", "value": "logbook" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST - Create Complete BA",
+          "description": "Buat BA baru dengan rows (modules + tasks).",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/complete-ba",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "complete-ba"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"BA Test - 26-VI\",\n  \"version\": \"0.0.1\",\n  \"deskripsi\": \"Deskripsi BA\",\n  \"type\": \"BERITA_ACARA\",\n  \"rows\": [\n    {\n      \"moduleId\": 1,\n      \"moduleName\": \"Module 1\",\n      \"taskName\": \"Task 1\",\n      \"programmerId\": 1,\n      \"jadwalMulai\": \"2026-06-23T08:00:00Z\",\n      \"kompleksitas\": \"MEDIUM\",\n      \"gambar\": null,\n      \"keterangan\": null\n    },\n    {\n      \"moduleId\": 1,\n      \"moduleName\": \"Module 1\",\n      \"taskName\": \"Task 2\",\n      \"programmerId\": 1,\n      \"jadwalMulai\": \"2026-06-23T10:00:00Z\",\n      \"kompleksitas\": \"EASY\",\n      \"gambar\": null,\n      \"keterangan\": null\n    }\n  ]\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success - 201",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 123,\n    \"nama\": \"BA Test - 26-VI\",\n    \"version\": \"0.0.1\",\n    \"deskripsi\": \"Deskripsi BA\",\n    \"type\": \"BERITA_ACARA\",\n    \"sumber\": \"CRM\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Pengajuan (Status Update)",
+      "item": [
+        {
+          "name": "PUT - Update Status BA",
+          "description": "Ubah status BA. Transisi yang valid:\nDRAFT → PENGAJUAN\nPENGAJUAN → REVIEW\nREVIEW → RFC / CED\nCED → DEVELOPMENT\nDEVELOPMENT → PROSES_DEVELOPMENT\nPROSES_DEVELOPMENT → UAT_INTERNAL\nUAT_INTERNAL_SELESAI → UAT_EXTERNAL\nUAT_EXTERNAL_SELESAI → SELESAI",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baId\": {{baId}},\n  \"status\": \"PENGAJUAN\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success - 200",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Status updated to PENGAJUAN\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "PUT - Example: Draft to Pengajuan",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baId\": 1,\n  \"status\": \"PENGAJUAN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT - Example: Review to RFC",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baId\": 1,\n  \"status\": \"RFC\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Riwayat RFC",
+      "item": [
+        {
+          "name": "GET - Fetch RFC Entries",
+          "description": "Ambil semua RFC entries untuk suatu BA.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba-detail-rfc?baId={{baId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba-detail-rfc"],
+              "query": [
+                { "key": "baId", "value": "{{baId}}" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - 200",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"baId\": 123,\n      \"moduleId\": 456,\n      \"iteration\": 1,\n      \"keterangan\": \"RFC comment...\",\n      \"gambar\": \"/api/uploads/blueprint/file.png\",\n      \"fileName\": \"file.png\",\n      \"createdAt\": \"2026-06-23T00:00:00.000Z\",\n      \"createdBy\": 1\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST - Create RFC Entry",
+          "description": "Simpan RFC entry untuk suatu module.",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba-detail-rfc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba-detail-rfc"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baId\": {{baId}},\n  \"moduleId\": 456,\n  \"keterangan\": \"Perubahan pada modul ini karena...\",\n  \"gambar\": null,\n  \"fileName\": null\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success - 201",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"baId\": 123,\n    \"moduleId\": 456,\n    \"iteration\": 2,\n    \"keterangan\": \"Perubahan pada modul ini karena...\",\n    \"gambar\": null,\n    \"fileName\": null,\n    \"createdBy\": 1\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Resubmit RFC",
+      "item": [
+        {
+          "name": "GET - Fetch RFC Notes (Iterasi Terakhir)",
+          "description": "Ambil RFC notes untuk di-load ke form resubmit.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba-detail-rfc?baId={{baId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba-detail-rfc"],
+              "query": [
+                { "key": "baId", "value": "{{baId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT - Update BA (Resubmit Data)",
+          "description": "Update BA data setelah resubmit. Update-in-place — tidak delete+recreate, sehingga BAModule IDs tetap terjaga.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/update-complete-ba",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "update-complete-ba"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baId\": {{baId}},\n  \"nama\": \"BA Name Updated\",\n  \"version\": \"0.0.2\",\n  \"deskripsi\": \"Updated setelah resubmit\",\n  \"rows\": [\n    {\n      \"moduleId\": 1,\n      \"moduleName\": \"Module 1\",\n      \"taskName\": \"Task 1 updated\",\n      \"programmerId\": 1,\n      \"jadwalMulai\": \"2026-06-24T08:00:00Z\",\n      \"kompleksitas\": \"MEDIUM\",\n      \"gambar\": null,\n      \"keterangan\": null\n    }\n  ]\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Success - 200",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 123,\n    \"nama\": \"BA Name Updated\",\n    \"version\": \"0.0.2\",\n    \"deskripsi\": \"Updated setelah resubmit\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PUT - Set Status ke PENGAJUAN (after resubmit)",
+          "description": "Setelah update data, ubah status BA kembali ke PENGAJUAN untuk review ulang.",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/ba/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "ba", "status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baId\": {{baId}},\n  \"status\": \"PENGAJUAN\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. UAT External",
+      "item": [
+        {
+          "name": "GET - Fetch UAT Data",
+          "description": "Ambil data UAT (BA + modules + tasks) untuk approve/revisi.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/uat?baId={{baId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "uat"],
+              "query": [
+                { "key": "baId", "value": "{{baId}}" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success - 200",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"ba\": {\n      \"id\": 123,\n      \"nama\": \"BA Name\",\n      \"baModules\": [\n        {\n          \"id\": 1,\n          \"nama\": \"Module 1\",\n          \"taskBAs\": [\n            {\n              \"id\": 1,\n              \"nama\": \"Task 1\",\n              \"programmer\": { \"namaLengkap\": \"John\" },\n              \"jadwalMulai\": \"2026-06-23T08:00:00Z\",\n              \"kompleksitas\": \"MEDIUM\",\n              \"tasklist\": { \"kode\": \"26-VI-2301\", \"status\": \"SELESAI\" },\n              \"uatExternalApproved\": false\n            }\n          ]\n        }\n      ]\n    },\n    \"stats\": {\n      \"total\": 5,\n      \"withTasklist\": 5,\n      \"completed\": 3,\n      \"uatExternalApproved\": 1\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST - Approve Task UAT External",
+          "description": "Approve task UAT External. (Butuh session cookie — login sebagai erda@exp).",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/uat-external",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "uat-external"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": 456,\n  \"approved\": true\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Approved - 200 (partial)",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": { /* task object */ },\n  \"baStatusUpdated\": false,\n  \"stats\": {\n    \"totalTasks\": 10,\n    \"completedTasks\": 5,\n    \"uatExternalApprovedTasks\": 3\n  }\n}"
+            },
+            {
+              "name": "Approved - 200 (all done)",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": { /* task object */ },\n  \"message\": \"Task UAT External approved. Semua 10 task sudah di-approve UAT External, BA status otomatis diubah ke UAT_EXTERNAL_SELESAI\",\n  \"baStatusUpdated\": true,\n  \"stats\": {\n    \"totalTasks\": 10,\n    \"completedTasks\": 5,\n    \"uatExternalApprovedTasks\": 5\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST - Revisi Task UAT External",
+          "description": "Revisi task UAT External (set isApproved=false + simpan keterangan revisi).",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/blueprint-baru/{{projectId}}/uat-external",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "blueprint-baru", "{{projectId}}", "uat-external"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": 456,\n  \"approved\": false,\n  \"keterangan\": \"Mohon diperbaiki bagian validasi input\",\n  \"fileUrl\": null\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "Revisi berhasil",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Catatan revisi berhasil disimpan\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

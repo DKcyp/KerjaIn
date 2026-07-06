@@ -1,0 +1,43 @@
+{
+  "id": "tasklist-api-env",
+  "name": "Tasklist API Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://192.168.1.10:3000",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "sessionToken",
+      "value": "172dc4710ab54af8b1b405c89d6de9f0",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "testUserId",
+      "value": "3",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "testProjectId",
+      "value": "1",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "testTaskId",
+      "value": "123",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "testModuleId",
+      "value": "2",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
