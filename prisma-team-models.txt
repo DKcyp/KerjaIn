@@ -1,4 +1,0 @@
-// Add these models to your prisma/schema.prisma file
-
-model MasterTeam {
-  id 
