@@ -1,0 +1,508 @@
+{
+	"info": {
+		"_postman_id": "stop-all-tasks-api-2024",
+		"name": "Stop All Tasks API",
+		"description": "API untuk menghentikan semua task yang sedang berjalan dan mengirim notifikasi WhatsApp.\n\n## Features\n- Stop semua task aktif\n- Hitung durasi pengerjaan\n- Kirim notifikasi WhatsApp ke programmer\n- Kirim summary ke admin\n- Health check & statistics\n\n## Base URLs\n- Development: http://localhost:3000\n- Production: https://log.expressa.id",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check & Statistics",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has status field\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('status');",
+							"    pm.expect(jsonData.status).to.eql('healthy');",
+							"});",
+							"",
+							"pm.test(\"Response has stats\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('stats');",
+							"    pm.expect(jsonData.stats).to.have.property('lastRun');",
+							"    pm.expect(jsonData.stats).to.have.property('totalStoppedToday');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/cron/stop-all-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cron",
+						"stop-all-tasks"
+					]
+				},
+				"description": "Health check endpoint untuk melihat status service dan statistik.\n\n**Response:**\n- `status`: Status service (healthy/unhealthy)\n- `service`: Nama service\n- `timestamp`: Waktu request\n- `stats`: Statistik (lastRun, totalStoppedToday, totalStoppedThisWeek, totalStoppedThisMonth)"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/cron/stop-all-tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cron",
+								"stop-all-tasks"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"healthy\",\n    \"service\": \"stop-all-tasks\",\n    \"timestamp\": \"2024-01-15T09:00:00.000Z\",\n    \"stats\": {\n        \"lastRun\": \"2024-01-15T09:00:00.000Z\",\n        \"totalStoppedToday\": 15,\n        \"totalStoppedThisWeek\": 75,\n        \"totalStoppedThisMonth\": 300\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Stop All Tasks (No Body)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response has success field\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('success');",
+							"});",
+							"",
+							"pm.test(\"Response has data object\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('data');",
+							"    pm.expect(jsonData.data).to.have.property('stoppedCount');",
+							"    pm.expect(jsonData.data).to.have.property('notificationsSent');",
+							"    pm.expect(jsonData.data).to.have.property('notificationsFailed');",
+							"});",
+							"",
+							"pm.test(\"Response has tasks array\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('tasks');",
+							"    pm.expect(jsonData.tasks).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cron/stop-all-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cron",
+						"stop-all-tasks"
+					]
+				},
+				"description": "Stop semua task aktif tanpa custom reason.\n\n**Behavior:**\n- Menggunakan default reason: \"Auto-stop (end of work hours)\"\n- Admin notification: enabled (default)\n\n**Response:**\n- `success`: Boolean status\n- `message`: Success/error message\n- `data`: Object dengan stoppedCount, notificationsSent, notificationsFailed, timestamp\n- `tasks`: Array of stopped tasks dengan detail"
+			},
+			"response": [
+				{
+					"name": "Success - No Active Tasks",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cron/stop-all-tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cron",
+								"stop-all-tasks"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"Successfully stopped 0 active tasks\",\n    \"data\": {\n        \"stoppedCount\": 0,\n        \"notificationsSent\": 0,\n        \"notificationsFailed\": 0,\n        \"timestamp\": \"2024-01-15T09:00:00.000Z\"\n    },\n    \"tasks\": []\n}"
+				},
+				{
+					"name": "Success - Tasks Stopped",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cron/stop-all-tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cron",
+								"stop-all-tasks"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"Successfully stopped 5 active tasks\",\n    \"data\": {\n        \"stoppedCount\": 5,\n        \"notificationsSent\": 5,\n        \"notificationsFailed\": 0,\n        \"timestamp\": \"2024-01-15T09:00:00.000Z\"\n    },\n    \"tasks\": [\n        {\n            \"id\": 123,\n            \"kode\": \"PRJ-001-1\",\n            \"programmer\": \"John Doe\",\n            \"project\": \"Project Alpha\",\n            \"module\": \"User Management\",\n            \"sessionDuration\": \"45 minutes\",\n            \"totalDuration\": \"120 minutes\"\n        },\n        {\n            \"id\": 124,\n            \"kode\": \"PRJ-002-3\",\n            \"programmer\": \"Jane Smith\",\n            \"project\": \"Project Beta\",\n            \"module\": \"API Integration\",\n            \"sessionDuration\": \"30 minutes\",\n            \"totalDuration\": \"90 minutes\"\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "Stop All Tasks (With Custom Reason)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response indicates success\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Stopped count is a number\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.data.stoppedCount).to.be.a('number');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"reason\": \"Akhir jam kerja (16:00 WIB). Selamat beristirahat!\",\n    \"sendAdminNotification\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cron/stop-all-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cron",
+						"stop-all-tasks"
+					]
+				},
+				"description": "Stop semua task aktif dengan custom reason dan admin notification.\n\n**Request Body:**\n- `reason` (optional): Custom message untuk programmer\n- `sendAdminNotification` (optional): Boolean, default true\n\n**Use Cases:**\n- End of work hours (16:00 WIB)\n- Emergency stop\n- Maintenance window\n- Manual testing"
+			},
+			"response": [
+				{
+					"name": "Success with Custom Reason",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Akhir jam kerja (16:00 WIB). Selamat beristirahat!\",\n    \"sendAdminNotification\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cron/stop-all-tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cron",
+								"stop-all-tasks"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"Successfully stopped 5 active tasks\",\n    \"data\": {\n        \"stoppedCount\": 5,\n        \"notificationsSent\": 6,\n        \"notificationsFailed\": 0,\n        \"timestamp\": \"2024-01-15T09:00:00.000Z\"\n    },\n    \"tasks\": [\n        {\n            \"id\": 123,\n            \"kode\": \"PRJ-001-1\",\n            \"programmer\": \"John Doe\",\n            \"project\": \"Project Alpha\",\n            \"module\": \"User Management\",\n            \"sessionDuration\": \"45 minutes\",\n            \"totalDuration\": \"120 minutes\"\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "Stop All Tasks (No Admin Notification)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response is successful\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.success).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"reason\": \"Test manual - no admin notification\",\n    \"sendAdminNotification\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cron/stop-all-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cron",
+						"stop-all-tasks"
+					]
+				},
+				"description": "Stop semua task tanpa mengirim notifikasi ke admin.\n\n**Use Case:**\n- Testing/development\n- Manual stop tanpa alert admin\n- Scheduled maintenance\n\n**Note:** Programmer tetap akan menerima notifikasi individual."
+			},
+			"response": [
+				{
+					"name": "Success - No Admin Notification",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Test manual - no admin notification\",\n    \"sendAdminNotification\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cron/stop-all-tasks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cron",
+								"stop-all-tasks"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"success\": true,\n    \"message\": \"Successfully stopped 3 active tasks\",\n    \"data\": {\n        \"stoppedCount\": 3,\n        \"notificationsSent\": 3,\n        \"notificationsFailed\": 0,\n        \"timestamp\": \"2024-01-15T09:00:00.000Z\"\n    },\n    \"tasks\": [\n        {\n            \"id\": 125,\n            \"kode\": \"PRJ-003-2\",\n            \"programmer\": \"Bob Wilson\",\n            \"project\": \"Project Gamma\",\n            \"module\": \"Database Migration\",\n            \"sessionDuration\": \"60 minutes\",\n            \"totalDuration\": \"180 minutes\"\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "Stop All Tasks (Emergency)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"reason\": \"🚨 EMERGENCY STOP - Server maintenance dimulai segera. Semua task akan dihentikan sementara.\",\n    \"sendAdminNotification\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cron/stop-all-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cron",
+						"stop-all-tasks"
+					]
+				},
+				"description": "Emergency stop untuk semua task dengan pesan urgent.\n\n**Use Cases:**\n- Server maintenance\n- Emergency deployment\n- Critical bug fix\n- System upgrade"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "prod_url",
+			"value": "https://log.expressa.id",
+			"type": "string"
+		}
+	]
+}

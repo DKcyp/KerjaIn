@@ -1,0 +1,94 @@
+/**
+ * Development Middleware with Automatic SSO
+ * 
+ * This middleware enables automatic SSO for localhost development.
+ * When you're logged into Portal (localhost:3000), it will automatically
+ * sign you into Logbook (localhost:3002) without clicking a button.
+ */
+
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { parseSessionFromCookieHeader } from '@/lib/auth';
+
+const PUBLIC_PATHS = [
+  '/signin',
+  '/signup',
+  '/api',
+  '/_next',
+  '/favicon.ico',
+  '/icons',
+  '/images',
+  '/socket.io',
+  '/sso-login',
+];
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip middleware for public paths
+  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
+    return NextResponse.next();
+  }
+
+  // Check if user has local Logbook session
+  const cookieHeader = request.headers.get('cookie');
+  const session = parseSessionFromCookieHeader(cookieHeader);
+
+  // If user has local session, allow access
+  if (session) {
+    return NextResponse.next();
+  }
+
+  // No local session - check if user is authenticated with Portal
+  const portalUrl = process.env.PORTAL_URL || process.env.NEXT_PUBLIC_PORTAL_URL || 'http://localhost:3001';
+  
+  try {
+    console.log('[Middleware] Checking Portal authentication at:', portalUrl);
+    
+    // Forward cookies to Portal to check authentication
+    const portalResponse = await fetch(`${portalUrl}/api/sso/me?app=richz-log`, {
+      headers: {
+        cookie: cookieHeader || '',
+      },
+      cache: 'no-store',
+    });
+
+    if (portalResponse.ok) {
+      const data = await portalResponse.json();
+      
+      // User is authenticated with Portal and has access
+      if (data.authenticated && data.hasAccess) {
+        console.log('[Middleware] User authenticated with Portal, auto-signing in');
+        const ssoUrl = new URL('/api/auth/portal-sso', request.url);
+        ssoUrl.searchParams.set('return_url', pathname);
+        return NextResponse.redirect(ssoUrl);
+      } else if (data.authenticated && !data.hasAccess) {
+        console.log('[Middleware] User authenticated but no subscription access');
+        // Redirect to signin with error message
+        const loginUrl = new URL('/signin', request.url);
+        loginUrl.searchParams.set('error', 'no_subscription');
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+  } catch (error) {
+    console.error('[Middleware] Error checking Portal auth:', error);
+  }
+
+  // Not authenticated with Portal - redirect to signin
+  const loginUrl = new URL('/signin', request.url);
+  loginUrl.searchParams.set('callbackUrl', pathname);
+  return NextResponse.redirect(loginUrl);
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (public folder)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};

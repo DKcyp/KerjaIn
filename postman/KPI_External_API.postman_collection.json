@@ -1,0 +1,346 @@
+{
+  "info": {
+    "name": "KPI External API - Logbook",
+    "_postman_id": "kpi-external-api-collection",
+    "description": "Collection untuk endpoint KPI External API - Logbook\n\nBase URL: http://localhost:3002\n\nAuth Options:\n1. SSO Token: X-SSO-USERNAME + X-SSO-TOKEN headers\n2. API Key: X-API-KEY header\n3. Session Cookie (dari login logbook)\n\nSet variable setelah login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "sso_username",
+      "value": "khoirul@exp",
+      "type": "string",
+      "description": "Username pegawai (sama dengan di logbook & RichzSpot)"
+    },
+    {
+      "key": "sso_token",
+      "value": "",
+      "type": "string",
+      "description": "SSO Token = ssoUserId dari tabel pegawai (sama dengan sso_credential di RichzSpot)"
+    },
+    {
+      "key": "api_key",
+      "value": "172dc4710ab54af8b1b405c89d6de9f0",
+      "type": "string",
+      "description": "EXTERNAL_API_KEY untuk full access"
+    },
+    {
+      "key": "pm_api_key",
+      "value": "pm-key-2024",
+      "type": "string",
+      "description": "RICHZLOG_PM_API_KEY untuk PM-level access"
+    },
+    {
+      "key": "pegawai_id",
+      "value": "24",
+      "type": "string",
+      "description": "ID pegawai yang ingin dihitung KPI-nya"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - SSO Token",
+      "item": [
+        {
+          "name": "KPI Calculation (SSO Token Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-USERNAME",
+                "value": "{{sso_username}}",
+                "type": "text",
+                "description": "Username pegawai"
+              },
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text",
+                "description": "ssoUserId dari tabel pegawai"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/kpi-calculation?pegawaiId={{pegawai_id}}&startDate=2026-05-01&endDate=2026-05-16",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "kpi-calculation"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "{{pegawai_id}}",
+                  "description": "ID pegawai (wajib untuk SSO auth)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-05-01",
+                  "description": "Tanggal mulai (YYYY-MM-DD, default: tanggal 1 bulan ini)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-05-16",
+                  "description": "Tanggal akhir (YYYY-MM-DD, default: hari ini)"
+                },
+                {
+                  "key": "startTime",
+                  "value": "00:00",
+                  "description": "Jam mulai (HH:mm, default: 00:00)",
+                  "disabled": true
+                },
+                {
+                  "key": "endTime",
+                  "value": "23:59",
+                  "description": "Jam akhir (HH:mm, default: 23:59)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Hitung KPI programmer menggunakan SSO Token authentication.\n\nAuth: X-SSO-USERNAME + X-SSO-TOKEN (ssoUserId dari pegawai = sso_credential di RichzSpot)\n\nResponse berisi 4 indikator KPI:\n- Task Selesai (30%)\n- Task Tepat Waktu (40%)\n- Waktu Pengerjaan (20%)\n- Task Revisi (10%)"
+          },
+          "response": []
+        },
+        {
+          "name": "KPI Calculation - Default Period (SSO)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-USERNAME",
+                "value": "{{sso_username}}",
+                "type": "text"
+              },
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/kpi-calculation?pegawaiId={{pegawai_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "kpi-calculation"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "{{pegawai_id}}",
+                  "description": "ID pegawai"
+                }
+              ]
+            },
+            "description": "KPI tanpa startDate/endDate - default periode: tanggal 1 bulan ini sampai hari ini."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth - API Key",
+      "item": [
+        {
+          "name": "KPI Calculation (API Key - Full Access)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-KEY",
+                "value": "{{api_key}}",
+                "type": "text",
+                "description": "EXTERNAL_API_KEY (SUPER_ADMIN level)"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/kpi-calculation?pegawaiId={{pegawai_id}}&startDate=2026-01-01&endDate=2026-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "kpi-calculation"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "{{pegawai_id}}",
+                  "description": "ID pegawai (wajib untuk API Key auth)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-01-01",
+                  "description": "Tanggal mulai"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-01-31",
+                  "description": "Tanggal akhir"
+                }
+              ]
+            },
+            "description": "KPI dengan API Key authentication (SUPER_ADMIN level - bisa lihat semua programmer)."
+          },
+          "response": []
+        },
+        {
+          "name": "KPI Calculation (PM API Key)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-KEY",
+                "value": "{{pm_api_key}}",
+                "type": "text",
+                "description": "RICHZLOG_PM_API_KEY (PM level)"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/kpi-calculation?pegawaiId={{pegawai_id}}&startDate=2026-05-01&endDate=2026-05-16",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "kpi-calculation"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "{{pegawai_id}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-05-16"
+                }
+              ]
+            },
+            "description": "KPI dengan PM API Key (PM-level access)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth - Session Cookie",
+      "item": [
+        {
+          "name": "Login (Get Session Cookie)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Session cookie otomatis disimpan oleh Postman",
+                  "var res = pm.response.json();",
+                  "if (res.user) {",
+                  "    pm.collectionVariables.set('pegawai_id', res.user.id.toString());",
+                  "    console.log('Logged in as:', res.user.namaLengkap, '(ID:', res.user.id, ')');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"khoirul@exp\",\n    \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login ke logbook untuk mendapatkan session cookie.\nCookie otomatis disimpan dan dipakai untuk request selanjutnya."
+          },
+          "response": []
+        },
+        {
+          "name": "KPI Calculation (Session - Own KPI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/kpi-calculation?startDate=2026-05-01&endDate=2026-05-16",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "kpi-calculation"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-05-16"
+                }
+              ]
+            },
+            "description": "KPI untuk user yang sedang login (tanpa pegawaiId - otomatis pakai session user).\nPROGRAMMER hanya bisa lihat KPI sendiri."
+          },
+          "response": []
+        },
+        {
+          "name": "KPI Calculation (Session - Other User)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/external/kpi-calculation?pegawaiId={{pegawai_id}}&startDate=2026-05-01&endDate=2026-05-16",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "kpi-calculation"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "{{pegawai_id}}",
+                  "description": "ID pegawai lain (hanya PM/SUPER_ADMIN yang bisa)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-05-16"
+                }
+              ]
+            },
+            "description": "KPI untuk programmer lain (hanya PM/SUPER_ADMIN yang bisa akses).\nPROGRAMMER akan dapat error 403 jika pegawaiId bukan miliknya."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "KPI Monitoring",
+      "item": [
+        {
+          "name": "KPI Monitoring (All Programmers)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/kpi-monitoring?startDate=2026-05-01&endDate=2026-05-16",
+              "host": ["{{base_url}}"],
+              "path": ["api", "kpi-monitoring"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-05-01",
+                  "description": "Tanggal mulai"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-05-16",
+                  "description": "Tanggal akhir"
+                }
+              ]
+            },
+            "description": "KPI Monitoring tabel per programmer.\n\nAccess:\n- PROGRAMMER: hanya lihat data sendiri\n- PM: lihat team (programmer di project-nya)\n- SUPER_ADMIN: lihat semua\n\nKolom:\n- JA: Jam Absen (dari Jadwal API - break time)\n- JT: Jam Total (sum estimasi semua task)\n- JS: Jam Selesai (actual hours task selesai)\n- JB: Jam Belum (sisa estimasi task belum selesai)\n- SJ: Selisih Jam (JA - JS)\n- JP: Jam Proses (actual hours task in progress)\n- JAS: Jam Aktif Selesai\n- R: Revisi (jumlah rejection)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

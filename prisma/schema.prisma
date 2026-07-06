@@ -1,0 +1,1404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pegawai {
+  id                      Int                   @id @default(autoincrement())
+  noUrut                  Int                   @unique
+  namaLengkap             String
+  noHp                    String
+  username                String?               @unique
+  passwordHash            String?
+  role                    Role                  @default(ADMIN)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  ssoAccessToken          String?
+  ssoCompanyId            String?
+  ssoRefreshToken         String?
+  ssoRoleId               String?
+  ssoTokenExpiry          DateTime?
+  ssoUserId               String?
+  departemenId            Int?                  @map("departemen_id")
+  portalTenantId          String?               @map("portal_tenant_id")
+  baDocuments             BADoc[]               @relation("BADocUploader")
+  baTasks                 BATask[]
+  backlog                 Backlog[]
+  eutTestsApproved        EutTest[]             @relation("ApprovedEutTests")
+  eutTestsAsTester        EutTest[]             @relation("TesterEutTests")
+  goLivesCreated          GoLive[]              @relation("GoLiveCreator")
+  goLiveActivityLogs      GoLiveActivityLog[]   @relation("GoLiveActivityUser")
+  goLiveChecklists        GoLiveChecklist[]
+  teamMemberships         MasterTeamMember[]    @relation("TeamMembers")
+  reviewSessionsCreated   ModulReviewSession[]
+  departemen              MasterDepartemen?     @relation(fields: [departemenId], references: [id])
+  programmerStatus        ProgrammerStatus?
+  programmerStatusChanges ProgrammerStatusLog[] @relation("StatusChanger")
+  programmerStatusLogs    ProgrammerStatusLog[] @relation("ProgrammerStatusLogs")
+  projectMemberships      ProyekTeam[]          @relation("ProjectMembers")
+  regionsAsPic            Region[]              @relation("RegionPic")
+  regionMembers           RegionMember[]        @relation("RegionMembers")
+  taskBAs                 TaskBA[]
+  task_ba_blueprint       task_ba_blueprint[]
+  tasklists               Tasklist[]
+  tasklistChats           TasklistChat[]        @relation("TasklistChatSender")
+  blueprintChats          BlueprintChat[]       @relation("BlueprintChatSender")
+  uatApprovalsApproved    UatApproval[]         @relation("UatApprover")
+  uatApprovalsRejected    UatApproval[]         @relation("UatRejecter")
+  uatTests                UatTest[]
+  userPermissions         UserPermission[]
+  userRoles               UserRole[]
+
+  @@index([departemenId], map: "idx_pegawai_departemen_id")
+  @@index([portalTenantId], map: "idx_pegawai_portal_tenant_id")
+  @@map("pegawai")
+}
+
+model Proyek {
+  id               Int                @id @default(autoincrement())
+  noUrut           Int                @unique
+  kodeProyek       String             @unique
+  namaProyek       String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  client           String?
+  pic              String?
+  type             ProjectType        @default(DEVELOPMENT)
+  crmId            String?
+  idDep            String?            @map("id_dep")
+  depNama          String?            @map("dep_nama") @db.VarChar(255)
+  projectNamaCrm   String?            @map("project_nama_crm") @db.VarChar(255)
+  depId            Int?               @map("dep_id")
+  isActive         Boolean            @default(true) @map("is_active")
+  teamId           Int?               @map("team_id")
+  idDeployment     String?            @map("id_deployment") @db.VarChar(255)
+  backlog          Backlog[]
+  blueprints       Blueprint[]
+  blueprint_temp   blueprint_temp[]
+  bacaras          Bacara[]
+  eutTests         EutTest[]
+  goLive           GoLive?
+  groupItems       ProjectGroupItem[] @relation("GroupedProjects")
+  team             MasterTeam?        @relation("TeamProjects", fields: [teamId], references: [id])
+  teamMembers      ProyekTeam[]       @relation("ProjectTeam")
+  tasklists        Tasklist[]
+  uatTests         UatTest[]
+
+  @@index([idDep], map: "idx_proyek_id_dep")
+  @@index([teamId])
+  @@map("proyek")
+}
+
+model ProyekTeam {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  pegawaiId  Int
+  jabatan    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  teamSource String?  @default("direct") @map("team_source")
+  pegawai    Pegawai  @relation("ProjectMembers", fields: [pegawaiId], references: [id], onDelete: Cascade)
+  project    Proyek   @relation("ProjectTeam", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, pegawaiId])
+  @@map("proyek_team")
+}
+
+model TeamHierarchy {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  managerId Int      @map("manager_id")
+  memberId  Int      @map("member_id")
+  isActive  Boolean  @default(true) @map("is_active")
+  source    String   @default("inherited")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, managerId, memberId])
+  @@index([projectId, managerId])
+  @@index([projectId, memberId])
+  @@map("team_hierarchy")
+}
+
+model Bacara {
+  id               Int                @id @default(autoincrement())
+  projectId        Int
+  nama             String
+  version          String             @default("0.0.1")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deskripsi        String?
+  status           BAStatus           @default(DRAFT)
+  type             BAType             @default(BERITA_ACARA)
+  sumber           BAFrom             @default(LOGBOOK)
+  submittedAt      DateTime?          @map("submitted_at")
+  fileRFC          String?            @map("file_rfc")
+  fileCED          String?            @map("file_ced")
+  fileOK           String?            @map("file_ok")
+  isNonaktif       Boolean            @default(false) @map("is_nonaktif")
+  idBlueprintBaru  Int?               @map("id_blueprint_baru")
+  rfcCount         String?            @map("rfc_count")
+  baModules        BAModule[]
+  baDocuments      BADoc[]
+  baLogs           BacaraLog[]
+  blueprint_module blueprint_module[]
+  project          Proyek             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  blueprintChats   BlueprintChat[]
+  baDetailRfcs     BADetailRfc[]
+
+  @@index([projectId])
+  @@index([projectId, nama])
+  @@index([projectId, type], map: "idx_bacara_project_type")
+  @@index([type], map: "idx_bacara_type")
+  @@index([sumber], map: "idx_bacara_sumber")
+  @@map("bacara")
+}
+
+model BacaraLog {
+  id                 Int       @id @default(autoincrement())
+  endpoint           String    @db.VarChar(255)
+  httpMethod         String    @map("http_method") @db.VarChar(10)
+  requestUrl         String?   @map("request_url")
+  requestHeaders     Json?     @map("request_headers")
+  requestParams      Json?     @map("request_params")
+  responseStatusCode Int?      @map("response_status_code")
+  responseHeaders    Json?     @map("response_headers")
+  responseTimeMs     Int?      @map("response_time_ms")
+  isError            Boolean   @default(false) @map("is_error")
+  errorMessage       String?   @map("error_message")
+  errorCode          String?   @map("error_code") @db.VarChar(50)
+  projectId          Int?      @map("project_id")
+  baId               Int?      @map("ba_id")
+  moduleId           Int?      @map("module_id")
+  taskId             Int?      @map("task_id")
+  userId             Int?      @map("user_id")
+  userName           String?   @map("user_name") @db.VarChar(255)
+  userIp             String?   @map("user_ip") @db.VarChar(50)
+  userAgent          String?   @map("user_agent")
+  sessionId          String?   @map("session_id") @db.VarChar(255)
+  requestId          String?   @map("request_id") @db.VarChar(255)
+  actionType         String    @map("action_type") @db.VarChar(50)
+  actionDescription  String?   @map("action_description")
+  statusBa           String?   @map("status_ba") @db.VarChar(50)
+  oldStatusBa        String?   @map("old_status_ba") @db.VarChar(50)
+  newStatusBa        String?   @map("new_status_ba") @db.VarChar(50)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  bacara             Bacara?   @relation(fields: [baId], references: [id], onDelete: SetNull)
+
+  @@index([baId])
+  @@index([projectId])
+  @@index([actionType])
+  @@index([statusBa])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("bacara_log")
+}
+
+model BADoc {
+  id               Int              @id @default(autoincrement())
+  baId             Int              @map("ba_id")
+  type             String
+  filePath         String           @map("file_path")
+  fileName         String           @map("file_name")
+  fileSize         Int              @map("file_size")
+  isLatest         Boolean          @default(true) @map("is_latest")
+  uploadedBy       Int?             @map("uploaded_by")
+  uploadedAt       DateTime         @default(now()) @map("uploaded_at")
+  keterangan       String?          @db.Text
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  bacara           Bacara           @relation(fields: [baId], references: [id], onDelete: Cascade)
+  uploader         Pegawai?         @relation("BADocUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  @@index([baId])
+  @@index([type])
+  @@index([isLatest])
+  @@index([uploadedBy])
+  @@map("ba_doc")
+}
+
+model BADetailRfc {
+  id          Int      @id @default(autoincrement())
+  baId        Int      @map("ba_id")
+  moduleId    Int      @map("module_id")
+  iteration   Int      @default(1) @map("iteration")
+  keterangan  String?  @db.Text
+  gambar      String?  @db.Text
+  filePath    String?  @map("file_path")
+  fileName    String?  @map("file_name")
+  createdBy   Int?     @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  bacara      Bacara   @relation(fields: [baId], references: [id], onDelete: Cascade)
+  module      BAModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@index([baId])
+  @@index([moduleId])
+  @@map("ba_detail_rfc")
+}
+
+model ProyekModule {
+  id              Int              @id @default(autoincrement())
+  projectId       Int
+  parentId        Int?
+  nama            String
+  order           Int              @default(0)
+  depth           Int              @default(0)
+  isLeaf          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  kode            String?
+  ba              String?          @map("ba") @db.VarChar(255)
+  baId            Int?             // FK ke business_analyst di DB (legacy), tidak di-manage Prisma
+  baVersion       String           @default("0.0.1") @map("ba_version") @db.VarChar(50)
+  version         String           @default("0.0.1") @db.VarChar(50)
+  backlog         Backlog[]
+  eutTests        EutTest[]
+  modulReviews    ModulReview[]
+  taskBAs         TaskBA[]
+  tasklist        Tasklist[]
+
+  @@index([projectId, parentId, order])
+  @@index([projectId, parentId, nama])
+  @@index([projectId, kode])
+  @@index([baId])
+  @@map("proyek_module")
+}
+
+model Tasklist {
+  id                        Int            @id @default(autoincrement())
+  projectId                 Int
+  moduleId                  Int
+  pegawaiId                 Int?
+  scheduleAt                DateTime
+  status                    TaskStatus     @default(MENUNGGU_PROSES_USER)
+  keterangan                String?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  imagePath                 String?
+  kode                      String         @default("")
+  statusCode                Int            @default(1)
+  idCrm                     String?        @map("id_crm")
+  tasklistType              TasklistType   @default(DEVELOPMENT)
+  assigneeStartTaskDeadline DateTime?
+  assigneeWorkDeadline      DateTime?
+  pmReviewDeadline          DateTime?
+  programmerDescription     String?        @map("programmer_description")
+  calculatedDueDate         DateTime?
+  taskComplexity            SlaType        @default(EASY)
+  isPaused                  Boolean        @default(false) @map("is_paused")
+  pausedAt                  DateTime?      @map("paused_at")
+  startedAt                 DateTime?      @map("started_at")
+  totalDurationMinutes      Int            @default(0) @map("total_duration_minutes")
+  createdBy                 Int?
+  ticketId                  String?        @map("ticket_id")
+  ticketUrl                 String?        @map("ticket_url")
+  customDurationHours       Decimal?       @map("custom_duration_hours") @db.Decimal(4, 2)
+  idDep                     String?        @map("id_dep")
+  baVersion                 String?        @default("0.0.1") @map("ba_version") @db.VarChar(50)
+  depId                     Int?           @map("dep_id")
+  version                   String?        @default("0.0.1") @db.VarChar(50)
+  sourceBacklogId           Int?           @map("source_backlog_id")
+  backlog                   Backlog[]
+  notifications             Notification[] @relation("TaskNotifications")
+  activities                TaskActivity[]
+  baTasks                   BATask[]
+  module                    ProyekModule   @relation(fields: [moduleId], references: [id])
+  pegawai                   Pegawai?       @relation(fields: [pegawaiId], references: [id])
+  project                   Proyek         @relation(fields: [projectId], references: [id])
+  chats                     TasklistChat[]
+
+  @@index([projectId])
+  @@index([moduleId])
+  @@index([pegawaiId])
+  @@index([createdBy])
+  @@index([kode])
+  @@index([idCrm])
+  @@index([ticketId])
+  @@index([tasklistType])
+  @@index([calculatedDueDate])
+  @@index([isPaused], map: "idx_tasklist_is_paused")
+  @@index([startedAt], map: "idx_tasklist_started_at")
+  @@index([idCrm], map: "idx_tasklist_id_crm")
+  @@index([idDep], map: "idx_tasklist_id_dep")
+  @@index([depId], map: "idx_tasklist_dep_id")
+  @@index([kode], map: "idx_tasklist_kode")
+  @@index([moduleId], map: "idx_tasklist_module_id")
+  @@index([pegawaiId], map: "idx_tasklist_pegawai_id")
+  @@index([projectId], map: "idx_tasklist_project_id")
+  @@index([tasklistType], map: "idx_tasklist_type")
+  @@index([baVersion], map: "idx_tasklist_ba_version")
+  @@index([version], map: "idx_tasklist_version")
+  @@index([sourceBacklogId], map: "idx_tasklist_source_backlog_id")
+  @@map("tasklist")
+}
+
+model TasklistLog {
+  id                    Int         @id @default(autoincrement())
+  taskId                Int
+  waktu                 DateTime    @default(now())
+  userId                Int?
+  keterangan            String?
+  action                String
+  imagePath             String?
+  status                TaskStatus?
+  totalStartStopMinutes Int?        @default(0)
+
+  @@index([taskId])
+  @@index([taskId, waktu])
+  @@index([userId])
+  @@index([taskId, waktu(sort: Desc)], map: "idx_tasklist_log_task_waktu")
+  @@index([taskId, totalStartStopMinutes], map: "tasklist_log_totalStartStopMinutes_idx")
+  @@map("tasklist_log")
+}
+
+model TasklistImage {
+  id           Int      @id @default(autoincrement())
+  taskId       Int
+  logId        Int?
+  fileName     String
+  originalName String
+  filePath     String
+  fileType     String
+  fileSize     Int
+  uploadedBy   Int?
+  uploadedAt   DateTime @default(now())
+
+  @@index([logId])
+  @@index([taskId], map: "tasklist_image_taskid_idx")
+  @@map("tasklist_image")
+}
+
+model UAT {
+  id             Int       @id @default(autoincrement())
+  taskId         Int       @unique
+  projectId      Int
+  developerId    Int
+  testerId       Int?
+  status         UATStatus @default(PENDING)
+  enteredQueueAt DateTime  @default(now())
+  testedAt       DateTime?
+  feedback       String?
+  attachments    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([developerId])
+  @@index([testerId])
+  @@index([status])
+  @@map("uat")
+}
+
+model UATLog {
+  id        Int      @id @default(autoincrement())
+  uatId     Int
+  userId    Int
+  action    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([uatId, createdAt])
+  @@index([userId])
+  @@map("uat_log")
+}
+
+model UatTest {
+  id             Int       @id @default(autoincrement())
+  namaFitur      String
+  kode           String
+  projectId      Int
+  moduleId       Int
+  testerId       Int
+  tanggalTest    DateTime
+  status         String    @default("Pending")
+  deskripsi      String?
+  approvedBy     String?
+  approvedDate   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  attachmentPath String?
+  rejectedBy     String?
+  rejectedDate   DateTime?
+  project        Proyek    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tester         Pegawai   @relation(fields: [testerId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([moduleId])
+  @@index([testerId])
+  @@index([status])
+  @@index([kode])
+  @@map("uat_test")
+}
+
+model UatApproval {
+  id          Int               @id @default(autoincrement())
+  projectId   Int
+  moduleId    Int
+  status      UatApprovalStatus @default(PENDING)
+  approvedBy  Int?
+  approvedAt  DateTime?
+  rejectedBy  Int?
+  rejectedAt  DateTime?
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  approver    Pegawai?          @relation("UatApprover", fields: [approvedBy], references: [id])
+  rejecter    Pegawai?          @relation("UatRejecter", fields: [rejectedBy], references: [id])
+  attachments UatAttachment[]
+
+  @@unique([projectId, moduleId])
+  @@index([projectId])
+  @@index([moduleId])
+  @@index([status])
+  @@index([approvedBy])
+  @@index([rejectedBy])
+  @@map("uat_approval")
+}
+
+model UatAttachment {
+  id            Int         @id @default(autoincrement())
+  uatApprovalId Int
+  fileName      String
+  originalName  String
+  filePath      String
+  fileType      String
+  fileSize      Int
+  uploadedBy    Int
+  uploadedAt    DateTime    @default(now())
+  uatApproval   UatApproval @relation(fields: [uatApprovalId], references: [id], onDelete: Cascade)
+
+  @@index([uatApprovalId])
+  @@index([uploadedBy])
+  @@map("uat_attachment")
+}
+
+model EutTest {
+  id             Int          @id @default(autoincrement())
+  namaFitur      String
+  kode           String
+  projectId      Int
+  moduleId       Int
+  testerId       Int
+  tanggalTest    DateTime
+  status         String       @default("Pending")
+  deskripsi      String?
+  approvedBy     Int?
+  approvedDate   DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  uatFilePath    String?
+  userGuideFiles Json?        @default("[]")
+  approver       Pegawai?     @relation("ApprovedEutTests", fields: [approvedBy], references: [id])
+  module         ProyekModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  project        Proyek       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tester         Pegawai      @relation("TesterEutTests", fields: [testerId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([moduleId])
+  @@index([testerId])
+  @@index([approvedBy])
+  @@index([status])
+  @@index([kode])
+  @@map("eut_test")
+}
+
+model GoLive {
+  id               Int                 @id @default(autoincrement())
+  projectId        Int                 @unique
+  status           GoLiveStatus        @default(READY)
+  scheduledDate    DateTime?
+  actualGoLiveDate DateTime?
+  notes            String?
+  createdBy        Int
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  creator          Pegawai             @relation("GoLiveCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  project          Proyek              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activityLogs     GoLiveActivityLog[]
+  checklists       GoLiveChecklist[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([createdBy])
+  @@map("go_live")
+}
+
+model GoLiveChecklist {
+  id          Int       @id @default(autoincrement())
+  goLiveId    Int
+  title       String
+  description String?
+  isCompleted Boolean   @default(false)
+  completedBy Int?
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completer   Pegawai?  @relation(fields: [completedBy], references: [id])
+  goLive      GoLive    @relation(fields: [goLiveId], references: [id], onDelete: Cascade)
+
+  @@index([goLiveId])
+  @@index([completedBy])
+  @@map("go_live_checklist")
+}
+
+model GoLiveActivityLog {
+  id          Int      @id @default(autoincrement())
+  goLiveId    Int
+  userId      Int
+  action      String
+  description String
+  notes       String?
+  createdAt   DateTime @default(now())
+  goLive      GoLive   @relation(fields: [goLiveId], references: [id], onDelete: Cascade)
+  user        Pegawai  @relation("GoLiveActivityUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([goLiveId, createdAt])
+  @@index([userId])
+  @@map("go_live_activity_log")
+}
+
+model Blueprint {
+  id              Int                    @id @default(autoincrement())
+  blueprintStatus BlueprintStatus        @default(DRAFT)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  createdBy       Int
+  updatedBy       Int?
+  picsData        Json?                  @default("[]")
+  proyekId        Int
+  proyek          Proyek                 @relation(fields: [proyekId], references: [id], onDelete: Cascade)
+  activityLog     BlueprintActivityLog[]
+  documents       BlueprintDocument[]
+  requirements    BlueprintRequirement[]
+  modulReviews    ModulReview[]
+  reviewSessions  ModulReviewSession[]
+
+  @@index([blueprintStatus])
+  @@index([createdBy])
+  @@index([proyekId])
+  @@map("blueprint")
+}
+
+model BlueprintDocument {
+  id           Int       @id @default(autoincrement())
+  blueprintId  Int
+  fileName     String
+  originalName String
+  fileSize     Int
+  fileType     String
+  version      String    @default("1.0")
+  uploadedBy   Int
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  groupName    String?   @map("group_name")
+  blueprint    Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+
+  @@index([blueprintId])
+  @@index([uploadedBy])
+  @@map("blueprint_document")
+}
+
+model BlueprintRequirement {
+  id          Int               @id @default(autoincrement())
+  blueprintId Int
+  description String
+  assignedTo  Int
+  status      RequirementStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  blueprint   Blueprint         @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+
+  @@index([blueprintId])
+  @@index([assignedTo])
+  @@index([status])
+  @@map("blueprint_requirement")
+}
+
+model BlueprintActivityLog {
+  id          Int       @id @default(autoincrement())
+  blueprintId Int
+  userId      Int
+  action      String
+  description String
+  notes       String?
+  createdAt   DateTime  @default(now())
+  blueprint   Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+
+  @@index([blueprintId, createdAt])
+  @@index([userId])
+  @@map("blueprint_activity_log")
+}
+
+model ModulReviewSession {
+  id          Int           @id @default(autoincrement())
+  blueprintId Int           @map("blueprint_id")
+  sessionName String?       @map("session_name") @db.VarChar(255)
+  isActive    Boolean       @default(true) @map("is_active")
+  createdBy   Int?          @map("created_by")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  reviews     ModulReview[]
+  blueprint   Blueprint     @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+  creator     Pegawai?      @relation(fields: [createdBy], references: [id])
+
+  @@index([isActive], map: "idx_modul_review_session_active")
+  @@index([blueprintId], map: "idx_modul_review_session_blueprint")
+  @@map("modul_review_session")
+}
+
+model ModulReview {
+  id            Int                 @id @default(autoincrement())
+  blueprintId   Int                 @map("blueprint_id")
+  moduleId      Int                 @map("module_id")
+  reviewComment String?             @map("review_comment")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  sessionId     Int?                @map("session_id")
+  blueprint     Blueprint           @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+  module        ProyekModule        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  session       ModulReviewSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, moduleId], map: "modul_review_session_module_unique")
+  @@index([blueprintId], map: "idx_modul_review_blueprint")
+  @@index([moduleId], map: "idx_modul_review_module")
+  @@index([sessionId], map: "idx_modul_review_session")
+  @@map("modul_review")
+}
+
+model MasterRole {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  displayName     String
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("master_role")
+}
+
+model MasterPermission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  displayName     String
+  description     String?
+  module          String
+  action          String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@index([module, action])
+  @@map("master_permission")
+}
+
+model RolePermission {
+  id           Int              @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  permission   MasterPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         MasterRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permission")
+}
+
+model UserRole {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  roleId    Int
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  role      MasterRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      Pegawai    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_role")
+}
+
+model UserPermission {
+  id           Int              @id @default(autoincrement())
+  userId       Int
+  permissionId Int
+  granted      Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  permission   MasterPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         Pegawai          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@map("user_permission")
+}
+
+model MasterSla {
+  id                   Int      @id @default(autoincrement())
+  slaType              SlaType  @unique
+  assigneeStartTask    Int
+  assigneeWorkDuration Int
+  pmReviewDuration     Int
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("master_sla")
+}
+
+model TaskComplexity {
+  id          Int      @id @default(autoincrement())
+  complexity  SlaType  @unique
+  hours       Float
+  points      Int
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("task_complexity")
+}
+
+model Region {
+  id        Int            @id @default(autoincrement())
+  kode      String         @unique
+  nama      String
+  picId     Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  pic       Pegawai        @relation("RegionPic", fields: [picId], references: [id])
+  members   RegionMember[]
+
+  @@index([picId])
+  @@map("region")
+}
+
+model RegionMember {
+  id        Int      @id @default(autoincrement())
+  regionId  Int
+  pegawaiId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pegawai   Pegawai  @relation("RegionMembers", fields: [pegawaiId], references: [id], onDelete: Cascade)
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([regionId, pegawaiId])
+  @@index([regionId])
+  @@index([pegawaiId])
+  @@map("region_member")
+}
+
+model ProgrammerStatus {
+  id           Int                   @id @default(autoincrement())
+  programmerId Int                   @unique
+  status       String
+  notes        String?
+  updatedBy    Int
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  programmer   Pegawai               @relation(fields: [programmerId], references: [id], onDelete: Cascade)
+  logs         ProgrammerStatusLog[]
+
+  @@index([programmerId])
+  @@index([status])
+  @@map("programmer_status")
+}
+
+model ProgrammerStatusLog {
+  id           Int              @id @default(autoincrement())
+  statusId     Int
+  programmerId Int
+  oldStatus    String?
+  newStatus    String
+  notes        String?
+  changedBy    Int
+  createdAt    DateTime         @default(now())
+  changer      Pegawai          @relation("StatusChanger", fields: [changedBy], references: [id])
+  programmer   Pegawai          @relation("ProgrammerStatusLogs", fields: [programmerId], references: [id])
+  status       ProgrammerStatus @relation(fields: [statusId], references: [id], onDelete: Cascade)
+
+  @@index([statusId])
+  @@index([programmerId])
+  @@index([createdAt])
+  @@map("programmer_status_log")
+}
+
+model TasklistChat {
+  id         Int      @id @default(autoincrement())
+  tasklistId Int      @map("tasklist_id")
+  senderId   Int      @map("sender_id")
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  isRead     Boolean  @default(false) @map("is_read")
+  fileUrl    String?  @map("file_url")
+  fileName   String?  @map("file_name")
+  fileType   String?  @map("file_type")
+  fileSize   Int?     @map("file_size")
+  extraFiles Json?    @default("[]") @map("extra_files") // array of {fileUrl, fileName, fileType, fileSize}
+  source     String   @default("chat") @map("source")   // "chat" | "reject" | "approve" | "kirim_review" | "mulai" | "pause" | "kembalikan" | "action_note"
+  sender     Pegawai  @relation("TasklistChatSender", fields: [senderId], references: [id])
+  tasklist   Tasklist @relation(fields: [tasklistId], references: [id], onDelete: Cascade)
+
+  @@index([tasklistId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("tasklist_chat")
+}
+
+model Notification {
+  id           String    @id @default(cuid())
+  userId       Int
+  type         String
+  title        String
+  message      String
+  taskId       Int?
+  taskCode     String?
+  projectId    Int?
+  projectName  String?
+  fromUserId   Int?
+  fromUserName String?
+  isRead       Boolean   @default(false)
+  readAt       DateTime?
+  priority     String    @default("medium")
+  data         Json?
+  requestId    String?
+  createdAt    DateTime  @default(now())
+  task         Tasklist? @relation("TaskNotifications", fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([taskId])
+  @@index([type])
+  @@index([requestId])
+  @@map("notification")
+}
+
+model TaskActivity {
+  id         Int      @id @default(autoincrement())
+  taskId     Int
+  userId     Int
+  action     String
+  fromStatus String?
+  toStatus   String?
+  note       String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  task       Tasklist @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@index([userId])
+  @@index([action])
+  @@map("task_activity")
+}
+
+/// Backlog notes (simple notes not tied to Tasklist). Soft-delete supported.
+model Backlog {
+  id                  Int           @id @default(autoincrement())
+  title               String
+  note                String
+  projectId           Int?
+  moduleId            Int?
+  assignedTo          Int?
+  tasklistId          Int?
+  estimatedManHour    Decimal?      @map("estimated_man_hour") @db.Decimal(8, 2)
+  isDeleted           Boolean       @default(false)
+  deletedAt           DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  createdBy           Int?
+  pegawai             Pegawai?      @relation(fields: [assignedTo], references: [id])
+  proyek_module       ProyekModule? @relation(fields: [moduleId], references: [id])
+  proyek              Proyek?       @relation(fields: [projectId], references: [id])
+  tasklist            Tasklist?     @relation(fields: [tasklistId], references: [id])
+
+  @@index([projectId])
+  @@index([moduleId])
+  @@index([assignedTo])
+  @@index([createdBy])
+  @@index([tasklistId])
+  @@index([isDeleted, updatedAt])
+  @@map("backlog")
+}
+
+model GitHubRepository {
+  id                 Int      @id @default(autoincrement())
+  projectId          Int      @unique @map("project_id")
+  repositoryName     String   @unique @map("repository_name")
+  repositoryFullName String   @map("repository_full_name")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([repositoryName])
+  @@map("github_repository")
+}
+
+model GitHubCredential {
+  id        Int       @id @default(autoincrement())
+  name      String
+  username  String
+  token     String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy Int?
+
+  @@map("github_credential")
+}
+
+model TaskBA {
+  id           Int          @id @default(autoincrement())
+  projectId    Int
+  moduleId     Int
+  nama         String
+  deskripsi    String?
+  programmerId Int?
+  jadwalMulai  DateTime?    @map("jadwal_mulai")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  kompleksitas SlaType      @default(MEDIUM)
+  module       ProyekModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  programmer   Pegawai?     @relation(fields: [programmerId], references: [id])
+
+  @@index([projectId])
+  @@index([moduleId])
+  @@index([programmerId])
+  @@index([kompleksitas])
+  @@map("task_ba")
+}
+
+model BAModule {
+  id              Int             @id @default(autoincrement())
+  projectId       Int             @map("projectId")
+  baId            Int             @map("baId")
+  parentId        Int?            @map("parentId")
+  nama            String          @db.VarChar(255)
+  kode            String?         @db.VarChar(100)
+  level           Int             @default(1)
+  order           Int             @default(0)
+  version         String          @default("0.0.1") @db.VarChar(50)
+  isAppModule     Boolean         @default(false) @map("is_app_module")
+  gambar          String?         @db.Text
+  keterangan      String?         @db.Text
+  createdAt       DateTime        @default(now()) @map("createdAt") @db.Timestamp(6)
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
+  bacara          Bacara          @relation(fields: [baId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parent          BAModule?       @relation("BAModuleHierarchy", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  children        BAModule[]      @relation("BAModuleHierarchy")
+  taskBAs         BATask[]
+  baDetailRfcs    BADetailRfc[]
+
+  @@index([baId])
+  @@index([isAppModule])
+  @@index([level])
+  @@index([parentId])
+  @@index([projectId])
+  @@map("bacara_module")
+}
+
+model BATask {
+  id                    Int        @id @default(autoincrement())
+  projectId             Int        @map("projectId")
+  moduleId              Int        @map("moduleId")
+  nama                  String     @db.VarChar(255)
+  deskripsi             String?
+  programmerId          Int?       @map("programmerId")
+  jadwalMulai           DateTime?  @map("jadwal_mulai") @db.Timestamp(6)
+  jadwalExternal        DateTime?  @map("jadwal_external") @db.Timestamp(6)
+  durasiPengerjaan      Decimal?   @map("durasi_pengerjaan") @db.Decimal(6, 2)
+  durasiExternal       Decimal?   @map("durasi_external") @db.Decimal(6, 2)
+  kompleksitas          SlaType    @default(MEDIUM)
+  isApproved            Boolean    @default(false) @map("is_approved")
+  approvedAt            DateTime?  @map("approved_at") @db.Timestamp(6)
+  approvedBy            Int?       @map("approved_by")
+  tasklistId            Int?       @map("tasklist_id")
+  uatApproved           Boolean    @default(false) @map("uatApproved")
+  uatApprovedAt         DateTime?  @map("uatApprovedAt") @db.Timestamp(6)
+  uatApprovedBy         Int?       @map("uatApprovedBy")
+  uatExternalApproved   Boolean    @default(false) @map("uatExternalApproved")
+  uatExternalApprovedAt DateTime?  @map("uatExternalApprovedAt") @db.Timestamp(6)
+  uatExternalApprovedBy Int?       @map("uatExternalApprovedBy")
+  revisiKeterangan      String?    @map("revisi_keterangan") @db.Text
+  revisiFileUrl         String?    @map("revisi_file_url") @db.Text
+  revisiAt              DateTime?  @map("revisi_at") @db.Timestamp(6)
+  revisiBy              Int?       @map("revisi_by")
+  createdAt             DateTime   @default(now()) @map("createdAt") @db.Timestamp(6)
+  updatedAt             DateTime   @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
+  module                BAModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  programmer            Pegawai?   @relation(fields: [programmerId], references: [id], onUpdate: NoAction)
+  tasklist              Tasklist?  @relation(fields: [tasklistId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([isApproved])
+  @@index([moduleId])
+  @@index([programmerId])
+  @@index([projectId])
+  @@index([tasklistId])
+  @@map("bacara_task")
+}
+
+model MasterTeam {
+  id            Int                @id @default(autoincrement())
+  nama          String             @db.VarChar(255)
+  deskripsi     String?
+  parentId      Int?               @map("parent_id")
+  isActive      Boolean            @default(true) @map("is_active")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  type          TeamType           @default(PRODUCT)
+  depId         Int?               @map("dep_id")
+  parent        MasterTeam?        @relation("TeamHierarchy", fields: [parentId], references: [id])
+  subTeams      MasterTeam[]       @relation("TeamHierarchy")
+  members       MasterTeamMember[]
+  projectGroups ProjectGroup[]
+  projects      Proyek[]           @relation("TeamProjects")
+
+  @@index([parentId])
+  @@index([type])
+  @@index([isActive])
+  @@map("master_team")
+}
+
+model MasterTeamMember {
+  id        Int        @id @default(autoincrement())
+  teamId    Int        @map("team_id")
+  pegawaiId Int        @map("pegawai_id")
+  role      String     @db.VarChar(100)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  pegawai   Pegawai    @relation("TeamMembers", fields: [pegawaiId], references: [id], onDelete: Cascade)
+  team      MasterTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, pegawaiId])
+  @@index([teamId])
+  @@index([pegawaiId])
+  @@map("master_team_member")
+}
+
+model ProjectGroup {
+  id        Int                @id @default(autoincrement())
+  nama      String             @db.VarChar(255)
+  deskripsi String?
+  teamId    Int                @map("team_id")
+  isActive  Boolean            @default(true) @map("is_active")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  team      MasterTeam         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  projects  ProjectGroupItem[]
+
+  @@index([teamId])
+  @@index([isActive])
+  @@map("project_group")
+}
+
+model ProjectGroupItem {
+  id        Int          @id @default(autoincrement())
+  groupId   Int          @map("group_id")
+  projectId Int          @map("project_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+  group     ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  project   Proyek       @relation("GroupedProjects", fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, projectId])
+  @@index([groupId])
+  @@index([projectId])
+  @@map("project_group_item")
+}
+
+model MasterDepartemen {
+  id        Int       @id @default(autoincrement())
+  idDep     String    @unique @map("id_dep") @db.VarChar(50)
+  nama      String    @db.VarChar(255)
+  deskripsi String?
+  logoUrl   String?   @map("logo_url") @db.VarChar(500)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  pegawai   Pegawai[]
+
+  @@index([idDep], map: "idx_master_departemen_id_dep")
+  @@index([isActive], map: "idx_master_departemen_is_active")
+  @@map("master_departemen")
+}
+
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model backlog_files {
+  id           Int       @id @default(autoincrement())
+  backlogId    Int
+  fileName     String    @db.VarChar(255)
+  originalName String    @db.VarChar(255)
+  filePath     String    @db.VarChar(500)
+  fileType     String    @db.VarChar(100)
+  fileSize     Int
+  uploadedBy   Int?
+  uploadedAt   DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([backlogId], map: "idx_backlog_files_backlog_id")
+  @@index([uploadedAt], map: "idx_backlog_files_uploaded_at")
+  @@index([uploadedBy], map: "idx_backlog_files_uploaded_by")
+}
+
+model blueprint_module {
+  id                     Int                 @id @default(autoincrement())
+  projectId              Int
+  baId                   Int
+  parentId               Int?
+  nama                   String
+  kode                   String?
+  level                  Int                 @default(1)
+  order                  Int                 @default(0)
+  version                String              @default("0.0.1")
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime
+  is_app_module          Boolean             @default(false)
+  business_analyst       Bacara              @relation(fields: [baId], references: [id], onDelete: Cascade)
+  blueprint_module       blueprint_module?   @relation("blueprint_moduleToblueprint_module", fields: [parentId], references: [id], onDelete: Cascade)
+  other_blueprint_module blueprint_module[]  @relation("blueprint_moduleToblueprint_module")
+  task_ba_blueprint      task_ba_blueprint[]
+
+  @@index([baId])
+  @@index([is_app_module])
+  @@index([level])
+  @@index([parentId])
+  @@index([projectId])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model task_ba_blueprint {
+  id               Int              @id @default(autoincrement())
+  projectId        Int
+  moduleId         Int
+  nama             String
+  deskripsi        String?
+  programmerId     Int?
+  jadwal_mulai     DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime
+  is_approved      Boolean          @default(false)
+  approved_at      DateTime?
+  approved_by      Int?
+  tasklist_id      Int?
+  kompleksitas     SlaType          @default(MEDIUM)
+  blueprint_module blueprint_module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  pegawai          Pegawai?         @relation(fields: [programmerId], references: [id])
+
+  @@index([is_approved])
+  @@index([kompleksitas])
+  @@index([moduleId])
+  @@index([programmerId])
+  @@index([projectId])
+  @@index([tasklist_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model blueprint_module_temp {
+  id                          Int                       @id @default(autoincrement())
+  import_session_id           String                    @db.VarChar(100)
+  blueprint_temp_id           Int
+  kode                        String?                   @db.VarChar(50)
+  nama                        String                    @db.VarChar(255)
+  parent_id                   Int?
+  level                       Int?                      @default(1)
+  is_app_module               Boolean?                  @default(false)
+  validation_errors           Json?                     @default("[]")
+  is_edited                   Boolean?                  @default(false)
+  original_row_number         Int?
+  created_at                  DateTime?                 @default(now()) @db.Timestamp(6)
+  existing_module_id          Int?
+  is_new_module               Boolean?                  @default(true)
+  blueprint_temp              blueprint_temp            @relation(fields: [blueprint_temp_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  blueprint_module_temp       blueprint_module_temp?    @relation("blueprint_module_tempToblueprint_module_temp", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  other_blueprint_module_temp blueprint_module_temp[]   @relation("blueprint_module_tempToblueprint_module_temp")
+  blueprint_tasklist_temp     blueprint_tasklist_temp[]
+
+  @@index([existing_module_id], map: "idx_module_temp_existing")
+  @@index([parent_id], map: "idx_module_temp_parent")
+  @@index([import_session_id], map: "idx_module_temp_session")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model blueprint_tasklist_temp {
+  id                    Int                   @id @default(autoincrement())
+  import_session_id     String                @db.VarChar(100)
+  module_temp_id        Int
+  nama_task             String                @db.VarChar(255)
+  deskripsi             String?
+  programmer_id         Int?
+  jadwal_mulai          DateTime?             @db.Date
+  kompleksitas          String?               @default("MEDIUM") @db.VarChar(20)
+  durasi                Int?
+  validation_errors     Json?                 @default("[]")
+  is_edited             Boolean?              @default(false)
+  original_row_number   Int?
+  created_at            DateTime?             @default(now()) @db.Timestamp(6)
+  blueprint_module_temp blueprint_module_temp @relation(fields: [module_temp_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([import_session_id], map: "idx_tasklist_temp_session")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model blueprint_temp {
+  id                    Int                     @id @default(autoincrement())
+  import_session_id     String                  @db.VarChar(100)
+  import_user_id        Int
+  proyek_id             Int
+  nama                  String                  @db.VarChar(255)
+  version               String                  @db.VarChar(50)
+  deskripsi             String?
+  type                  String?                 @default("BLUEPRINT") @db.VarChar(50)
+  validation_errors     Json?                   @default("[]")
+  is_edited             Boolean?                @default(false)
+  original_row_number   Int?
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  blueprint_module_temp blueprint_module_temp[]
+  proyek                Proyek                  @relation(fields: [proyek_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([import_session_id], map: "idx_blueprint_temp_session")
+}
+
+model BlueprintChat {
+  id         Int      @id @default(autoincrement())
+  baId       Int      @map("ba_id")
+  senderId   Int      @map("sender_id")
+  senderName String   @default("") @map("sender_name") @db.VarChar(255)
+  message    String
+  fileUrl    String?  @map("file_url")
+  fileName   String?  @map("file_name")
+  fileType   String?  @map("file_type")
+  fileSize   Int?     @map("file_size")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  bacara     Bacara   @relation(fields: [baId], references: [id], onDelete: Cascade)
+  sender     Pegawai  @relation("BlueprintChatSender", fields: [senderId], references: [id])
+
+  @@index([baId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("blueprint_chat")
+}
+
+model GlobalOnofGetJadwal {
+  id          Int      @id @default(autoincrement())
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  description String?  @db.VarChar(255)
+  updatedBy   Int?     @map("updated_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("global_onof_getjadwal")
+}
+
+enum Role {
+  SUPER_ADMIN
+  PM
+  PROGRAMMER
+  ADMIN
+}
+
+enum TaskStatus {
+  MENUNGGU_PROSES_USER
+  SEDANG_DIPROSES_USER
+  MENUNGGU_REVIEW_PM
+  SELESAI
+  SEDANG_DIPROSES_USER_PAUSED
+}
+
+enum UATStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum BlueprintStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+enum BAStatus {
+  DRAFT
+  PENGAJUAN
+  REVIEW
+  RFC
+  CED
+  KIRIM_OK
+  DEVELOPMENT
+  PROSES_DEVELOPMENT
+  UAT_INTERNAL
+  UAT_INTERNAL_SELESAI
+  UAT_EXTERNAL
+  UAT_EXTERNAL_SELESAI
+  SELESAI
+  APPROVED
+  MENUNGGU_APPROVAL
+}
+
+enum BAType {
+  BLUEPRINT
+  BERITA_ACARA
+}
+
+enum BAFrom {
+  CRM
+  LOGBOOK
+}
+
+enum RequirementStatus {
+  PENDING
+  DONE
+  REVISI
+}
+
+enum TasklistType {
+  BLUEPRINT
+  DEVELOPMENT
+  MAINTENANCE
+}
+
+enum ProjectType {
+  BLUEPRINT
+  DEVELOPMENT
+  SUPPORT
+  CLOSED
+}
+
+enum GoLiveStatus {
+  READY
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ROLLED_BACK
+}
+
+enum SlaType {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum UatApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TeamType {
+  MANAGED_SERVICE
+  PRODUCT
+  PROJECT
+}

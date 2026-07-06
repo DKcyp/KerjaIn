@@ -1,0 +1,149 @@
+# CRM Tasklist API - Simple Guide
+
+## Authentication
+All requests require API key in header:
+```
+X-API-Key: your-crm-api-key
+```
+
+## 1. CREATE TASKLIST
+
+**Endpoint:** POST /api/external/crm/tasklist
+
+**Purpose:** Create a new task linked to a CRM ticket
+
+### Required Fields:
+- projectCode: Project code (e.g., "PRJ-001")
+- moduleCode: Module code (e.g., "01.01") 
+- assigneeUsername: Username of person assigned
+- scheduleAt: When to schedule (ISO date: "2024-10-23T14:30:00.000Z")
+
+### Optional Fields:
+- description: Task description
+- ticketId: Your CRM ticket ID
+- ticketUrl: Link to ticket in your CRM
+- crmId: CRM record ID
+- priority: EASY/MEDIUM/HARD (default: MEDIUM)
+- tasklistType: BLUEPRINT/DEVELOPMENT/MAINTENANCE (default: DEVELOPMENT)
+- image: Image file (if using form upload)
+
+### Example 1 - JSON Request:
+```bash
+curl -X POST \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectCode": "PRJ-001",
+    "moduleCode": "01.01", 
+    "assigneeUsername": "developer1",
+    "scheduleAt": "2024-10-23T14:30:00.000Z",
+    "description": "Fix login bug",
+    "ticketId": "TICKET-123",
+    "priority": "HIGH"
+  }' \
+  http://your-domain.com/api/external/crm/tasklist
+```
+
+### Example 2 - With Image Upload:
+```bash
+curl -X POST \
+  -H "X-API-Key: your-api-key" \
+  -F "projectCode=PRJ-001" \
+  -F "moduleCode=01.01" \
+  -F "assigneeUsername=developer1" \
+  -F "scheduleAt=2024-10-23T14:30:00.000Z" \
+  -F "description=Fix login bug" \
+  -F "ticketId=TICKET-123" \
+  -F "image=@screenshot.png" \
+  http://your-domain.com/api/external/crm/tasklist
+```
+
+### Response:
+```json
+{
+  "success": true,
+  "message": "CRM tasklist created successfully",
+  "data": {
+    "taskId": 123,
+    "taskCode": "01.01 - 1",
+    "projectCode": "PRJ-001",
+    "projectName": "E-Commerce System",
+    "assignee": {
+      "username": "developer1",
+      "name": "John Doe"
+    },
+    "scheduleAt": "2024-10-23T14:30:00.000Z",
+    "status": "MENUNGGU_PROSES_USER",
+    "ticketId": "TICKET-123"
+  }
+}
+```
+
+## 2. GET TASKLIST BY TICKET ID
+
+**Endpoint:** GET /api/external/crm/tasks?ticketId=TICKET-123
+
+**Purpose:** Get all tasks linked to a specific ticket ID
+
+### Example Request:
+```bash
+curl -H "X-API-Key: your-api-key" \
+  "http://your-domain.com/api/external/crm/tasks?ticketId=TICKET-123"
+```
+
+### Response:
+```json
+{
+  "success": true,
+  "message": "Tasks retrieved successfully", 
+  "ticketId": "TICKET-123",
+  "totalTasks": 2,
+  "tasks": [
+    {
+      "taskId": 123,
+      "taskCode": "01.01 - 1",
+      "projectCode": "PRJ-001",
+      "projectName": "E-Commerce System",
+      "moduleCode": "01.01",
+      "moduleName": "User Authentication",
+      "assignee": {
+        "username": "developer1",
+        "name": "John Doe"
+      },
+      "scheduleAt": "2024-10-23T14:30:00.000Z",
+      "dueDate": "2024-10-23T22:30:00.000Z",
+      "description": "Fix login bug",
+      "status": "SEDANG_DIPROSES_USER",
+      "complexity": "MEDIUM",
+      "slaDeadlines": {
+        "startTaskBy": "2024-10-23T15:30:00.000Z",
+        "completeWorkBy": "2024-10-23T22:30:00.000Z",
+        "reviewBy": "2024-10-24T00:30:00.000Z"
+      },
+      "ticketId": "TICKET-123",
+      "ticketUrl": "https://crm.company.com/ticket/123",
+      "crmId": "CRM-456",
+      "createdAt": "2024-10-22T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+## Task Status Values:
+- MENUNGGU_PROSES_USER: Waiting for user to start
+- SEDANG_DIPROSES_USER: User is working on it
+- MENUNGGU_REVIEW_PM: Waiting for PM review
+- SELESAI: Completed
+
+## Error Responses:
+- 401: Invalid API key
+- 400: Missing required fields or invalid data
+- 404: Project/module/user not found
+- 500: Server error
+
+## Notes:
+- Tasks automatically get WhatsApp notifications sent to assignees
+- SLA deadlines are calculated based on task complexity
+- All dates should be in ISO format with timezone
+- Images are stored and accessible via the returned imagePath
+- Task codes are auto-generated based on module hierarchy

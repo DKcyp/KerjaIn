@@ -1,0 +1,4 @@
+-- AlterEnum
+-- Add new values to BAStatus enum
+ALTER TYPE "BAStatus" ADD VALUE IF NOT EXISTS 'APPROVED';
+ALTER TYPE "BAStatus" ADD VALUE IF NOT EXISTS 'MENUNGGU_APPROVAL';

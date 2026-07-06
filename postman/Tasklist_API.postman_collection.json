@@ -1,0 +1,386 @@
+{
+  "info": {
+    "name": "Tasklist API - Logbook (External/SSO)",
+    "_postman_id": "tasklist-external-api-collection",
+    "description": "Collection untuk endpoint External Tasklist API - Logbook\n\nBase URL: http://localhost:7001\n\nAuth Options:\n1. SSO Token: X-SSO-TOKEN header (ssoUserId dari tabel pegawai)\n2. SSO Token + Username: X-SSO-TOKEN + X-SSO-USERNAME headers\n3. API Key: X-API-Key header (full access)\n\nUntuk Spot Mobile: cukup kirim X-SSO-TOKEN di header, tasklist otomatis di-filter per user.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "sso_token",
+      "value": "",
+      "type": "string",
+      "description": "SSO Token = ssoUserId dari tabel pegawai (sama dengan sso_credential di RichzSpot)"
+    },
+    {
+      "key": "sso_username",
+      "value": "khoirul@exp",
+      "type": "string",
+      "description": "Username pegawai (opsional, bisa pakai token saja)"
+    },
+    {
+      "key": "api_key",
+      "value": "172dc4710ab54af8b1b405c89d6de9f0",
+      "type": "string",
+      "description": "EXTERNAL_API_KEY untuk full access"
+    },
+    {
+      "key": "task_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "pegawai_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth - SSO Token (Spot Mobile)",
+      "description": "Endpoint yang dipakai Spot Mobile. Cukup kirim X-SSO-TOKEN di header.\nToken = ssoUserId dari tabel pegawai (sama dengan yang ada di Spot Mobile).\nTasklist otomatis di-filter berdasarkan user pemilik token.",
+      "item": [
+        {
+          "name": "Get My Tasklist (SSO Token Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text",
+                "description": "ssoUserId dari tabel pegawai"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"]
+            },
+            "description": "Ambil semua tasklist milik user berdasarkan SSO token.\nOtomatis filter by pegawaiId yang cocok dengan ssoUserId di database."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist (SSO Token + Username)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text",
+                "description": "ssoUserId dari tabel pegawai"
+              },
+              {
+                "key": "X-SSO-USERNAME",
+                "value": "{{sso_username}}",
+                "type": "text",
+                "description": "Username pegawai (opsional, untuk validasi tambahan)"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"]
+            },
+            "description": "Ambil tasklist dengan validasi username + token (lebih secure)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist - Filter by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?status=SEDANG_DIPROSES_USER",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SEDANG_DIPROSES_USER",
+                  "description": "Filter status: MENUNGGU_PROSES_USER, SEDANG_DIPROSES_USER, SEDANG_DIPROSES_USER_PAUSED, MENUNGGU_REVIEW_PM, SELESAI. Bisa comma-separated."
+                }
+              ]
+            },
+            "description": "Ambil tasklist yang sedang dikerjakan saja."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist - Filter by Project",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?projectId={{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{project_id}}",
+                  "description": "Filter by project ID"
+                }
+              ]
+            },
+            "description": "Ambil tasklist di project tertentu."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist - Filter by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?from=2026-05-01&to=2026-05-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-05-01",
+                  "description": "Dari tanggal (YYYY-MM-DD)"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-05-31",
+                  "description": "Sampai tanggal (YYYY-MM-DD)"
+                }
+              ]
+            },
+            "description": "Ambil tasklist dalam rentang tanggal tertentu."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist - Filter Active Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?status=MENUNGGU_PROSES_USER,SEDANG_DIPROSES_USER,SEDANG_DIPROSES_USER_PAUSED",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "MENUNGGU_PROSES_USER,SEDANG_DIPROSES_USER,SEDANG_DIPROSES_USER_PAUSED",
+                  "description": "Multiple status (comma-separated) - semua task yang belum selesai"
+                }
+              ]
+            },
+            "description": "Ambil semua task yang masih aktif (belum selesai/review)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist - Pagination",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?page=1&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Halaman (default: 1)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Jumlah per halaman (default: 20, max: 100)"
+                }
+              ]
+            },
+            "description": "Ambil tasklist dengan pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Tasklist - Filter by Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-SSO-TOKEN",
+                "value": "{{sso_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?tasklistType=DEVELOPMENT",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "tasklistType",
+                  "value": "DEVELOPMENT",
+                  "description": "Filter type: BLUEPRINT, DEVELOPMENT, MAINTENANCE"
+                }
+              ]
+            },
+            "description": "Ambil tasklist berdasarkan tipe."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth - API Key (Admin/Backend)",
+      "description": "Endpoint dengan API Key authentication. Full access, bisa lihat semua user.",
+      "item": [
+        {
+          "name": "Get All Tasklist (API Key)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}",
+                "type": "text",
+                "description": "EXTERNAL_API_KEY"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"]
+            },
+            "description": "Ambil semua tasklist (admin access). Tanpa pegawaiId = semua user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasklist by Pegawai (API Key)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist?pegawaiId={{pegawai_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"],
+              "query": [
+                {
+                  "key": "pegawaiId",
+                  "value": "{{pegawai_id}}",
+                  "description": "ID pegawai yang ingin dilihat tasklistnya"
+                }
+              ]
+            },
+            "description": "Ambil tasklist pegawai tertentu menggunakan API Key."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Tasklist (API Key)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"projectCode\": \"PRJ-001\",\n    \"moduleCode\": \"01.01\",\n    \"assigneeUsername\": \"khoirul@exp\",\n    \"scheduleAt\": \"2026-05-22T08:00:00.000Z\",\n    \"description\": \"Implementasi fitur baru\",\n    \"tasklistType\": \"DEVELOPMENT\",\n    \"taskComplexity\": \"MEDIUM\",\n    \"status\": \"MENUNGGU_PROSES_USER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"]
+            },
+            "description": "Buat tasklist baru via API Key.\n\nRequired: projectCode, moduleCode, assigneeUsername, scheduleAt\nOptional: description, tasklistType, taskComplexity, status"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Tasklist (API Key)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"taskCode\": \"01.01 - 1\",\n    \"description\": \"Updated description\",\n    \"status\": \"SEDANG_DIPROSES_USER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/external/tasklist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external", "tasklist"]
+            },
+            "description": "Update tasklist via API Key.\n\nRequired: taskCode\nOptional: scheduleAt, description, taskComplexity, status"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

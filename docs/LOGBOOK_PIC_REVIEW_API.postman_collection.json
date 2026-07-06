@@ -1,0 +1,415 @@
+{
+  "info": {
+    "name": "Logbook to PIC Review Integration API",
+    "description": "API collection for triggering PIC review requests from the Logbook system when tasks are completed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Request PIC Review",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has success field\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success');",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Response contains ticket data\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('ticket');",
+              "    pm.expect(jsonData.ticket).to.have.property('id');",
+              "    pm.expect(jsonData.ticket).to.have.property('status');",
+              "    pm.expect(jsonData.ticket).to.have.property('dispositionStatus');",
+              "});",
+              "",
+              "pm.test(\"Ticket status is WAITING_FOR_CUSTOMER\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.ticket.status).to.eql('WAITING_FOR_CUSTOMER');",
+              "});",
+              "",
+              "pm.test(\"Disposition status is NEEDS_PIC_APPROVAL\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.ticket.dispositionStatus).to.eql('NEEDS_PIC_APPROVAL');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"logbookTaskId\": \"{{logbook_task_id}}\",\n  \"completedBy\": \"{{completed_by}}\",\n  \"completionNotes\": \"{{completion_notes}}\",\n  \"apiKey\": \"{{api_key}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/tickets/{{ticket_id}}/request-pic-review",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "tickets",
+            "{{ticket_id}}",
+            "request-pic-review"
+          ]
+        },
+        "description": "Triggers a PIC review request for a ticket when a Logbook task is completed.\n\n**Required Fields:**\n- `logbookTaskId`: ID of the completed task in Logbook\n- `apiKey`: Authentication key for Logbook system\n\n**Optional Fields:**\n- `completedBy`: Name of person who completed the task\n- `completionNotes`: Additional notes about completion"
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logbookTaskId\": \"TASK-2024-001\",\n  \"completedBy\": \"Tri Muhammad AJI (aji@exp)\",\n  \"completionNotes\": \"All development work completed. Ready for PIC review.\",\n  \"apiKey\": \"your-secret-api-key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tickets/{{ticket_id}}/request-pic-review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tickets",
+                "{{ticket_id}}",
+                "request-pic-review"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": true,\n  \"message\": \"PIC review requested successfully\",\n  \"ticket\": {\n    \"id\": \"cm123abc456\",\n    \"ticketNumber\": \"TKT-2024-001\",\n    \"status\": \"WAITING_FOR_CUSTOMER\",\n    \"dispositionStatus\": \"NEEDS_PIC_APPROVAL\",\n    \"assignedTo\": {\n      \"id\": \"user123\",\n      \"name\": \"Bismo\",\n      \"email\": \"bismo@exp\"\n    }\n  }\n}"
+        },
+        {
+          "name": "Error - Invalid API Key",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logbookTaskId\": \"TASK-2024-001\",\n  \"completedBy\": \"Tri Muhammad AJI\",\n  \"completionNotes\": \"Task completed\",\n  \"apiKey\": \"wrong-api-key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tickets/{{ticket_id}}/request-pic-review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tickets",
+                "{{ticket_id}}",
+                "request-pic-review"
+              ]
+            }
+          },
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": false,\n  \"error\": \"Unauthorized: Invalid API key\"\n}"
+        },
+        {
+          "name": "Error - Missing Required Field",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completedBy\": \"Tri Muhammad AJI\",\n  \"completionNotes\": \"Task completed\",\n  \"apiKey\": \"your-secret-api-key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tickets/{{ticket_id}}/request-pic-review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tickets",
+                "{{ticket_id}}",
+                "request-pic-review"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": false,\n  \"error\": \"logbookTaskId is required\"\n}"
+        },
+        {
+          "name": "Error - Invalid Ticket Status",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logbookTaskId\": \"TASK-2024-001\",\n  \"completedBy\": \"Tri Muhammad AJI\",\n  \"completionNotes\": \"Task completed\",\n  \"apiKey\": \"your-secret-api-key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tickets/{{ticket_id}}/request-pic-review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tickets",
+                "{{ticket_id}}",
+                "request-pic-review"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": false,\n  \"error\": \"Cannot request PIC review for ticket with status: CLOSED. Valid statuses are: ASSIGNED, IN_PROGRESS\"\n}"
+        },
+        {
+          "name": "Error - Ticket Not Found",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logbookTaskId\": \"TASK-2024-001\",\n  \"completedBy\": \"Tri Muhammad AJI\",\n  \"completionNotes\": \"Task completed\",\n  \"apiKey\": \"your-secret-api-key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tickets/invalid-ticket-id/request-pic-review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tickets",
+                "invalid-ticket-id",
+                "request-pic-review"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"success\": false,\n  \"error\": \"Ticket not found\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Request PIC Review - Minimal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response indicates success\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"logbookTaskId\": \"{{logbook_task_id}}\",\n  \"apiKey\": \"{{api_key}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/tickets/{{ticket_id}}/request-pic-review",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "tickets",
+            "{{ticket_id}}",
+            "request-pic-review"
+          ]
+        },
+        "description": "Minimal request with only required fields (logbookTaskId and apiKey)."
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "your-secret-api-key",
+      "type": "string"
+    },
+    {
+      "key": "ticket_id",
+      "value": "cm123abc456",
+      "type": "string"
+    },
+    {
+      "key": "logbook_task_id",
+      "value": "TASK-2024-001",
+      "type": "string"
+    },
+    {
+      "key": "completed_by",
+      "value": "Tri Muhammad AJI (aji@exp)",
+      "type": "string"
+    },
+    {
+      "key": "completion_notes",
+      "value": "All development work completed. Ready for PIC review.",
+      "type": "string"
+    }
+  ]
+}

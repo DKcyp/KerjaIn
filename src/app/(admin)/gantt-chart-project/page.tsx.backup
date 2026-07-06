@@ -1,0 +1,1276 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import Select2Field from "@/components/form/Select2Field";
+import { Modal } from "@/components/ui/modal";
+
+// Types
+interface ModulNode {
+  id: number;
+  parentId: number | null;
+  nama: string;
+  kode: string | null;
+  children?: ModulNode[];
+}
+
+interface FlatNode {
+  id: number | string;
+  parent: number | string;
+  text?: string;
+  data?: {
+    depth: number;
+    kode: string | null;
+  };
+}
+
+type TaskItem = {
+  id: number;
+  projectId: number;
+  moduleId: number;
+  pegawaiId: number;
+  pegawaiNama: string;
+  proyekNama: string;
+  moduleNama: string;
+  keterangan: string | null;
+  scheduleAt: string;
+  calculatedDueDate?: string | null;
+  submittedForReviewAt?: string | null;
+  approvedAt?: string | null;
+  startedAt?: string | null;
+  status: 'MENUNGGU_PROSES_USER' | 'SEDANG_DIPROSES_USER' | 'SEDANG_DIPROSES_USER_PAUSED' | 'MENUNGGU_REVIEW_PM' | 'SELESAI';
+  taskComplexity?: 'EASY' | 'MEDIUM' | 'HARD';
+  tasklistType?: 'BLUEPRINT' | 'DEVELOPMENT' | 'MAINTENANCE';
+  kode?: string;
+  imagePath?: string | null;
+};
+
+type Proyek = { id: number; namaProyek: string; modules?: ModulNode[] };
+
+type TaskLog = {
+  id: number;
+  waktu: string;
+  userId: number;
+  userNama?: string;
+  keterangan?: string | null;
+  status?: TaskItem['status'] | null;
+  action: string;
+};
+
+// Helper functions
+const isCompletedLate = (task: TaskItem) => {
+  if (task.status !== 'SELESAI') return false;
+  if (!task.calculatedDueDate || !task.approvedAt) return false;
+  const dueDate = new Date(task.calculatedDueDate);
+  const approvedDate = new Date(task.approvedAt);
+  return approvedDate > dueDate;
+};
+
+export default function GanttChartProjectPage() {
+  const [filterProjectId, setFilterProjectId] = useState<number | "">("");
+  const [projects, setProjects] = useState<Proyek[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [modulesFlat, setModulesFlat] = useState<FlatNode[]>([]);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  // Detail modal state
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<TaskItem | null>(null);
+  const [detailLogs, setDetailLogs] = useState<TaskLog[]>([]);
+  const [detailLogsLoading, setDetailLogsLoading] = useState(false);
+
+  // Load logs when detail modal opens
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      if (!detailOpen || !detailItem?.id) {
+        setDetailLogs([]);
+        return;
+      }
+      try {
+        setDetailLogsLoading(true);
+        const res = await fetch(`/api/tasklist/${detailItem.id}/logs`, {
+          cache: 'no-store',
+          credentials: 'include'
+        });
+        if (!alive) return;
+        if (res.ok) {
+          const d = await res.json();
+          setDetailLogs(Array.isArray(d?.items) ? d.items : []);
+        } else {
+          setDetailLogs([]);
+        }
+      } catch {
+        if (alive) setDetailLogs([]);
+      } finally {
+        if (alive) setDetailLogsLoading(false);
+      }
+    };
+    load();
+    return () => { alive = false; };
+  }, [detailOpen, detailItem?.id]);
+
+  // Helper functions for modal
+  const openDetail = (task: TaskItem) => {
+    setDetailItem(task);
+    setDetailOpen(true);
+  };
+
+  const closeDetail = () => {
+    setDetailOpen(false);
+    setDetailItem(null);
+  };
+
+  // Parse waktu string without timezone conversion
+  const fmtWaktuFromString = (waktuStr: string) => {
+    const parts = waktuStr.split('T');
+    if (parts.length !== 2) return waktuStr;
+    
+    const [datePart, timePart] = parts;
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes] = timePart.split(':');
+    
+    return `${day}-${month}-${year} ${hours}:${minutes}`;
+  };
+
+  const statusBadge = (status?: string) => {
+    const map: Record<string, { label: string; color: string }> = {
+      'MENUNGGU_PROSES_USER': { label: 'Menunggu Proses', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+      'SEDANG_DIPROSES_USER': { label: 'Sedang Diproses', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
+      'SEDANG_DIPROSES_USER_PAUSED': { label: 'Diproses (Paused)', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
+      'MENUNGGU_REVIEW_PM': { label: 'Menunggu Review PM', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+      'SELESAI': { label: 'Selesai', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+    };
+    const s = map[status || ''] || { label: status || '-', color: 'bg-gray-100 text-gray-700' };
+    return <span className={`px-2 py-0.5 rounded text-xs font-medium ${s.color}`}>{s.label}</span>;
+  };
+
+  const tasklistTypeBadge = (type?: string) => {
+    const map: Record<string, { label: string; color: string }> = {
+      'BLUEPRINT': { label: 'Blueprint', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
+      'DEVELOPMENT': { label: 'Development', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+      'MAINTENANCE': { label: 'Maintenance', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
+    };
+    const t = map[type || ''] || { label: type || '-', color: 'bg-gray-100 text-gray-700' };
+    return <span className={`px-2 py-0.5 rounded text-xs font-medium ${t.color}`}>{t.label}</span>;
+  };
+
+  const taskComplexityBadge = (complexity?: string) => {
+    const map: Record<string, { label: string; color: string }> = {
+      'EASY': { label: 'Easy', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+      'MEDIUM': { label: 'Medium', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
+      'HARD': { label: 'Hard', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+    };
+    const c = map[complexity || ''] || { label: complexity || '-', color: 'bg-gray-100 text-gray-700' };
+    return <span className={`px-2 py-0.5 rounded text-xs font-medium ${c.color}`}>{c.label}</span>;
+  };
+
+  const formatDateDisplay = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };  };
+
+  // Load projects
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/proyek", { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.items) setProjects(data.items);
+        }
+      } catch (e) {
+        console.error("Failed loading projects", e);
+      }
+    };
+    load();
+  }, []);
+
+  // Load modules when project is selected
+  useEffect(() => {
+    const loadModules = async () => {
+      if (!filterProjectId) {
+        setModules([]);
+        setModulesFlat([]);
+        setExpandedIds(new Set());
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/proyek-modules/${filterProjectId}/tree`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          const tree: ModulNode[] = data?.tree || [];
+          setModules(tree);
+
+          // Flatten tree
+          const flat = flattenTree(tree);
+          setModulesFlat(flat);
+
+          // Expand all roots by default
+          const roots = flat.filter((n) => String(n.parent) === '0').map((n) => Number(n.id));
+          setExpandedIds(new Set(roots));
+        }
+      } catch (e) {
+        console.error("Failed loading modules", e);
+      }
+    };
+    loadModules();
+  }, [filterProjectId]);
+
+  // Load tasks when project changes (without date filter)
+  useEffect(() => {
+    const load = async () => {
+      if (!filterProjectId) {
+        setTasks([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Load all tasks for the project
+        // Use a very wide date range to get all tasks
+        const startDate = new Date('2020-01-01');
+        const endDate = new Date('2030-12-31');
+        
+        const params = new URLSearchParams();
+        params.set('projectId', String(filterProjectId));
+        params.set('from', formatDateISO(startDate));
+        params.set('to', formatDateISO(endDate));
+
+        const res = await fetch(`/api/gantt-chart-project?${params.toString()}`, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Tasks loaded:', data?.items?.length || 0);
+          setTasks(data?.items || []);
+        }
+      } catch (e) {
+        console.error("Failed loading tasks", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [filterProjectId]);
+
+  // Helper: flatten tree
+  const flattenTree = (nodes: ModulNode[], parent: number | string = 0, depth: number = 0): FlatNode[] => {
+    const result: FlatNode[] = [];
+    nodes.forEach((node) => {
+      result.push({
+        id: node.id,
+        parent,
+        text: node.nama,
+        data: { depth, kode: node.kode }
+      });
+      if (node.children && node.children.length > 0) {
+        result.push(...flattenTree(node.children, node.id, depth + 1));
+      }
+    });
+    return result;
+  };
+
+  // Helper: format date
+  const formatDateISO = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const toDateStr = (d: Date) => formatDateISO(d);
+
+  const isoToDateStr = (iso: string) => iso.substring(0, 10);
+
+  const isToday = (d: Date) => {
+    const t = new Date();
+    return d.getDate() === t.getDate() &&
+      d.getMonth() === t.getMonth() &&
+      d.getFullYear() === t.getFullYear();
+  };
+
+  // Generate date columns based on tasks
+  const dateColumns = useMemo(() => {
+    if (tasks.length === 0) {
+      // Default: show 30 days from today if no tasks
+      const cols: Date[] = [];
+      const today = new Date();
+      const start = new Date(today);
+      start.setDate(today.getDate() - 15);
+      const end = new Date(today);
+      end.setDate(today.getDate() + 15);
+      
+      const current = new Date(start);
+      while (current <= end) {
+        cols.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+      return cols;
+    }
+
+    // Find earliest and latest dates from all tasks
+    let minDate: Date | null = null;
+    let maxDate: Date | null = null;
+
+    tasks.forEach(task => {
+      // Check scheduleAt
+      const scheduleDate = new Date(task.scheduleAt);
+      if (!minDate || scheduleDate < minDate) minDate = scheduleDate;
+      if (!maxDate || scheduleDate > maxDate) maxDate = scheduleDate;
+
+      // Check calculatedDueDate
+      if (task.calculatedDueDate) {
+        const dueDate = new Date(task.calculatedDueDate);
+        if (!maxDate || dueDate > maxDate) maxDate = dueDate;
+      }
+
+      // Check startedAt
+      if (task.startedAt) {
+        const startedDate = new Date(task.startedAt);
+        if (!minDate || startedDate < minDate) minDate = startedDate;
+      }
+
+      // Check approvedAt
+      if (task.approvedAt) {
+        const approvedDate = new Date(task.approvedAt);
+        if (!maxDate || approvedDate > maxDate) maxDate = approvedDate;
+      }
+    });
+
+    if (!minDate || !maxDate) {
+      return [];
+    }
+
+    console.log('Date Range Calculation:', {
+      minDate: (minDate as Date).toISOString(),
+      maxDate: (maxDate as Date).toISOString(),
+      totalTasks: tasks.length
+    });
+
+    // Add some padding (7 days before and after)
+    const startDate = new Date(minDate);
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date(maxDate);
+    endDate.setDate(endDate.getDate() + 7);
+
+    // Generate columns
+    const cols: Date[] = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      cols.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return cols;
+  }, [tasks]);
+
+  const VISIBLE_DAYS = 10;
+  const [colWidth, setColWidth] = useState(80);
+
+  useEffect(() => {
+    const calculateColWidth = () => {
+      if (timelineRef.current) {
+        const containerWidth = timelineRef.current.clientWidth;
+        const calculatedWidth = Math.floor(containerWidth / VISIBLE_DAYS);
+        setColWidth(Math.max(60, Math.min(120, calculatedWidth)));
+      }
+    };
+    calculateColWidth();
+    window.addEventListener('resize', calculateColWidth);
+    return () => window.removeEventListener('resize', calculateColWidth);
+  }, []);
+
+  // Scroll to today
+  useEffect(() => {
+    if (!loading && timelineRef.current && dateColumns.length > 0 && colWidth > 0) {
+      const todayStr = formatDateISO(new Date());
+      let todayIdx = -1;
+      for (let i = 0; i < dateColumns.length; i++) {
+        if (formatDateISO(dateColumns[i]) === todayStr) {
+          todayIdx = i;
+          break;
+        }
+      }
+      if (todayIdx >= 0) {
+        const scrollToIdx = Math.max(0, todayIdx - 3);
+        timelineRef.current.scrollLeft = scrollToIdx * colWidth;
+      }
+    }
+  }, [loading, dateColumns, colWidth]);
+
+  // Toggle expand/collapse
+  const toggleExpand = (id: number) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Get visible modules (considering expand/collapse)
+  const displayedModulesFlat = useMemo(() => {
+    const parentMap = new Map<any, any>();
+    modulesFlat.forEach((n) => parentMap.set(n.id, n.parent));
+    
+    const isVisible = (node: FlatNode) => {
+      let cur = node.parent;
+      while (cur !== 0) {
+        const idNum = Number(cur);
+        if (!expandedIds.has(idNum)) return false;
+        cur = parentMap.get(cur);
+      }
+      return true;
+    };
+    
+    return modulesFlat.filter(isVisible);
+  }, [modulesFlat, expandedIds]);
+
+  // Group tasks by module (with collapse logic)
+  const tasksByModule = useMemo(() => {
+    const grouped: Record<number, TaskItem[]> = {};
+    
+    // Initialize all visible modules with empty arrays
+    displayedModulesFlat.forEach((mod) => {
+      grouped[Number(mod.id)] = [];
+    });
+    
+    // Add tasks to their modules
+    tasks.forEach((task) => {
+      const targetModuleId = task.moduleId;
+      
+      // Check if task's module is visible
+      const isModuleVisible = displayedModulesFlat.some(m => Number(m.id) === targetModuleId);
+      
+      if (isModuleVisible && grouped[targetModuleId]) {
+        // Check if this module has children and is collapsed
+        const hasChildren = modulesFlat.some((n) => String(n.parent) === String(targetModuleId));
+        const isExpanded = expandedIds.has(targetModuleId);
+        
+        // Only add task if:
+        // 1. Module has no children (leaf node), OR
+        // 2. Module is expanded
+        if (!hasChildren || isExpanded) {
+          grouped[targetModuleId].push(task);
+        }
+      }
+    });
+    
+    return grouped;
+  }, [tasks, displayedModulesFlat, modulesFlat, expandedIds]);
+
+  // Get summary bar for collapsed modules (shows date range of all child tasks)
+  const getModuleSummary = (moduleId: number) => {
+    // Find all child modules (recursively)
+    const getAllChildModuleIds = (parentId: number): number[] => {
+      const children = modulesFlat.filter(m => Number(m.parent) === parentId);
+      let result = [parentId];
+      children.forEach(child => {
+        result = result.concat(getAllChildModuleIds(Number(child.id)));
+      });
+      return result;
+    };
+
+    const childModuleIds = getAllChildModuleIds(moduleId);
+    
+    // Get all tasks from child modules
+    const childTasks = tasks.filter(t => childModuleIds.includes(t.moduleId));
+    
+    if (childTasks.length === 0) return null;
+
+    // Find earliest and latest dates
+    let minDate: string | null = null;
+    let maxDate: string | null = null;
+
+    childTasks.forEach(task => {
+      const startDate = task.startedAt ? isoToDateStr(task.startedAt) : isoToDateStr(task.scheduleAt);
+      const endDate = task.calculatedDueDate ? isoToDateStr(task.calculatedDueDate) : isoToDateStr(task.scheduleAt);
+
+      if (!minDate || startDate < minDate) minDate = startDate;
+      if (!maxDate || endDate > maxDate) maxDate = endDate;
+    });
+
+    // Calculate completion percentage
+    const completedTasks = childTasks.filter(t => t.status === 'SELESAI').length;
+    const percentage = childTasks.length > 0 ? Math.round((completedTasks / childTasks.length) * 100) : 0;
+
+    return { minDate, maxDate, taskCount: childTasks.length, completedCount: completedTasks, percentage };
+  };
+
+  // Pack tasks into rows (avoid overlap)
+  const packTasksIntoRows = (taskList: TaskItem[]): TaskItem[][] => {
+    if (taskList.length === 0) return [];
+    
+    const sorted = [...taskList].sort((a, b) => a.scheduleAt.localeCompare(b.scheduleAt));
+    const rows: TaskItem[][] = [];
+    
+    const tasksOverlap = (t1: TaskItem, t2: TaskItem) => {
+      const start1 = t1.startedAt ? isoToDateStr(t1.startedAt) : isoToDateStr(t1.scheduleAt);
+      const end1 = t1.calculatedDueDate ? isoToDateStr(t1.calculatedDueDate) : isoToDateStr(t1.scheduleAt);
+      const start2 = t2.startedAt ? isoToDateStr(t2.startedAt) : isoToDateStr(t2.scheduleAt);
+      const end2 = t2.calculatedDueDate ? isoToDateStr(t2.calculatedDueDate) : isoToDateStr(t2.scheduleAt);
+      return !(end1 < start2 || end2 < start1);
+    };
+    
+    for (const task of sorted) {
+      let placed = false;
+      for (const row of rows) {
+        const hasOverlap = row.some(existingTask => tasksOverlap(existingTask, task));
+        if (!hasOverlap) {
+          row.push(task);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        rows.push([task]);
+      }
+    }
+    
+    return rows;
+  };
+
+  // Calculate task position
+  const getColumnIndex = (dateStr: string) => {
+    if (dateColumns.length === 0) return 0;
+    const firstColDate = toDateStr(dateColumns[0]);
+    const lastColDate = toDateStr(dateColumns[dateColumns.length - 1]);
+    if (dateStr < firstColDate) return 0;
+    if (dateStr > lastColDate) return dateColumns.length - 1;
+    for (let i = 0; i < dateColumns.length; i++) {
+      if (toDateStr(dateColumns[i]) === dateStr) return i;
+    }
+    return 0;
+  };
+
+  const DAY_GAP = 4;
+
+  const getTaskStyle = (task: TaskItem) => {
+    const taskStartStr = isoToDateStr(task.scheduleAt);
+    const taskEndStr = task.calculatedDueDate ? isoToDateStr(task.calculatedDueDate) : taskStartStr;
+    const startColIdx = Math.max(0, getColumnIndex(taskStartStr));
+    const endColIdx = Math.min(dateColumns.length - 1, getColumnIndex(taskEndStr));
+    const widthCols = Math.max(1, endColIdx - startColIdx + 1);
+    const totalWidth = widthCols * colWidth - (DAY_GAP * 2);
+    const finalWidth = Math.max(colWidth - (DAY_GAP * 2), totalWidth);
+    return {
+      left: `${startColIdx * colWidth + DAY_GAP}px`,
+      width: `${finalWidth}px`,
+      startColIdx,
+      taskStartStr,
+    };
+  };
+
+  const getActualBarStyle = (task: TaskItem) => {
+    if (task.status === 'MENUNGGU_PROSES_USER') {
+      return { left: '0px', width: '0px', workWidth: '0px', reviewWidth: '0px' };
+    }
+
+    const actualStartStr = task.startedAt ? isoToDateStr(task.startedAt) : isoToDateStr(task.scheduleAt);
+    const actualStartColIdx = getColumnIndex(actualStartStr);
+    
+    let actualEndColIdx: number;
+    let submittedColIdx: number | null = null;
+
+    if (task.status === 'SELESAI' && task.approvedAt) {
+      const approvedStr = isoToDateStr(task.approvedAt);
+      actualEndColIdx = getColumnIndex(approvedStr);
+      if (task.submittedForReviewAt) {
+        submittedColIdx = getColumnIndex(isoToDateStr(task.submittedForReviewAt));
+      }
+    } else if (task.status === 'MENUNGGU_REVIEW_PM') {
+      const todayStr = toDateStr(new Date());
+      // Batasi sampai target due date atau hari ini, mana yang lebih kecil
+      const targetEnd = task.calculatedDueDate ? isoToDateStr(task.calculatedDueDate) : todayStr;
+      const endStr = targetEnd < todayStr ? targetEnd : todayStr;
+      actualEndColIdx = getColumnIndex(endStr);
+      if (task.submittedForReviewAt) {
+        submittedColIdx = getColumnIndex(isoToDateStr(task.submittedForReviewAt));
+      }
+    } else {
+      // Untuk task yang sedang dikerjakan, batasi sampai target due date atau hari ini
+      const todayStr = toDateStr(new Date());
+      const targetEnd = task.calculatedDueDate ? isoToDateStr(task.calculatedDueDate) : todayStr;
+      const endStr = targetEnd < todayStr ? targetEnd : todayStr;
+      actualEndColIdx = getColumnIndex(endStr);
+    }
+
+    const widthCols = Math.max(1, actualEndColIdx - actualStartColIdx + 1);
+    const totalWidth = widthCols * colWidth - (DAY_GAP * 2);
+    const leftPos = actualStartColIdx * colWidth + DAY_GAP;
+    let workWidth = totalWidth;
+    let reviewWidth = 0;
+
+    if (submittedColIdx !== null && submittedColIdx >= actualStartColIdx) {
+      const workCols = Math.max(0, submittedColIdx - actualStartColIdx + 1);
+      workWidth = workCols * colWidth - (DAY_GAP * 2);
+      const reviewCols = Math.max(0, actualEndColIdx - submittedColIdx);
+      reviewWidth = reviewCols * colWidth;
+      if (workWidth + reviewWidth > totalWidth) {
+        reviewWidth = totalWidth - workWidth;
+      }
+    }
+
+    return {
+      left: `${leftPos}px`,
+      width: `${totalWidth}px`,
+      workWidth: `${Math.max(0, workWidth)}px`,
+      reviewWidth: `${Math.max(0, reviewWidth)}px`,
+    };
+  };
+
+  return (
+    <>
+      <div
+        className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden max-w-full flex flex-col"
+        style={{ height: 'calc(100vh - 120px)' }}
+      >
+      {/* Header */}
+      <div className="p-6 pb-0 flex-shrink-0">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          Gantt Chart Project - Module Timeline
+        </h1>
+        {dateColumns.length > 0 && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Menampilkan {dateColumns.length} hari: {String(dateColumns[0].getDate()).padStart(2, '0')}/{String(dateColumns[0].getMonth() + 1).padStart(2, '0')}/{dateColumns[0].getFullYear()} - {String(dateColumns[dateColumns.length - 1].getDate()).padStart(2, '0')}/{String(dateColumns[dateColumns.length - 1].getMonth() + 1).padStart(2, '0')}/{dateColumns[dateColumns.length - 1].getFullYear()}
+          </p>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 mb-6 items-end">
+          <div className="flex flex-col" style={{ width: '300px' }}>
+            <label className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pilih Proyek: <span className="text-red-500">*</span></label>
+            <Select2Field
+              value={filterProjectId}
+              onChange={(v) => setFilterProjectId(v === "" ? "" : Number(v))}
+              options={[
+                { id: "", text: "-- Pilih Proyek --" },
+                ...projects.map(p => ({ id: p.id, text: p.namaProyek }))
+              ]}
+              placeholder="-- Pilih Proyek --"
+            />
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-6 mb-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-4 bg-yellow-500 rounded"></div>
+            <span className="text-gray-600 dark:text-gray-400">Sedang Dikerjakan</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-4 rounded" style={{ backgroundColor: '#f465ff' }}></div>
+            <span className="text-gray-600 dark:text-gray-400">Menunggu Review</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-4 bg-green-500 rounded"></div>
+            <span className="text-gray-600 dark:text-gray-400">Selesai Tepat Waktu</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-4 bg-red-500 rounded"></div>
+            <span className="text-gray-600 dark:text-gray-400">Selesai Terlambat</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Gantt Chart */}
+      <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex flex-col mx-6 mb-6" style={{ minHeight: 0 }}>
+        {/* Header Row */}
+        <div className="flex w-full flex-shrink-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 p-3 font-medium text-gray-700 dark:text-gray-300 h-[44px]" style={{ width: '800px', minWidth: '800px' }}>
+            Modul
+          </div>
+          <div className="overflow-hidden" style={{ width: 'calc(100% - 800px)' }}>
+            <div
+              className="flex"
+              style={{
+                width: `${dateColumns.length * colWidth}px`,
+                transform: `translateX(-${timelineRef.current?.scrollLeft || 0}px)`
+              }}
+              id="date-headers"
+            >
+              {dateColumns.map((date, idx) => {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = String(date.getFullYear()).slice(-2);
+                const dayName = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][date.getDay()];
+                
+                return (
+                  <div
+                    key={idx}
+                    style={{ width: `${colWidth}px`, minWidth: `${colWidth}px` }}
+                    className={`p-1 text-center border-r border-gray-200 dark:border-gray-700 last:border-r-0 h-[44px] flex flex-col items-center justify-center ${
+                      isToday(date) ? 'bg-blue-500 text-white font-semibold' : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800'
+                    }`}
+                  >
+                    <div className="text-[10px] font-medium leading-tight">{dayName}</div>
+                    <div className="text-xs font-semibold leading-tight">{day}/{month}</div>
+                    <div className="text-[9px] leading-tight opacity-70">{year}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="flex w-full">
+            {/* Left Column - Module Names */}
+            <div className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" style={{ width: '800px', minWidth: '800px' }}>
+              {loading && <div className="p-3 h-[100px]" />}
+              {!loading && displayedModulesFlat.length === 0 && <div className="p-3 h-[100px]" />}
+
+              {!loading && displayedModulesFlat.map((node) => {
+                const depth = Number(node.data?.depth || 0);
+                const kode = node.data?.kode;
+                const moduleTasks = tasksByModule[Number(node.id)] || [];
+                const hasChildren = modulesFlat.some((n) => String(n.parent) === String(node.id));
+                const expanded = expandedIds.has(Number(node.id));
+                
+                // Calculate rows consistently with timeline section
+                const showSummaryBar = hasChildren && !expanded;
+                const rows = showSummaryBar ? [[]] : packTasksIntoRows(moduleTasks);
+                
+                // Calculate height: module name + task details table
+                let rowHeight = 40; // Base height for module name
+                if (showSummaryBar) {
+                  // Add extra height for progress bar in collapsed modules
+                  rowHeight = 55; // Module name + progress bar
+                } else if (moduleTasks.length > 0) {
+                  // Check if any task has lateness info
+                  const hasLateTask = moduleTasks.some(t => {
+                    if (t.status !== 'SELESAI' || !t.calculatedDueDate || !t.approvedAt) return false;
+                    return new Date(t.approvedAt) > new Date(t.calculatedDueDate);
+                  });
+                  // Add height for task details table
+                  const rowHeightPerTask = hasLateTask ? 40 : 32; // Taller rows if there's lateness info
+                  rowHeight += 30 + (moduleTasks.length * rowHeightPerTask); // Header + rows
+                }
+
+                return (
+                  <div
+                    key={String(node.id)}
+                    className="text-sm border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                    style={{ minHeight: `${rowHeight}px` }}
+                  >
+                    {/* Module Name */}
+                    <div className="p-3 pb-2 flex items-center gap-1" style={{ paddingLeft: depth * 20 }}>
+                      <button
+                        type="button"
+                        className={`w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-white/5 ${hasChildren ? '' : 'opacity-0 pointer-events-none'}`}
+                        onClick={() => toggleExpand(Number(node.id))}
+                      >
+                        {expanded ? '▾' : '▸'}
+                      </button>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {kode ? `${kode} - ` : ''}{node.text}
+                          </span>
+                          {moduleTasks.length > 0 && (
+                            <span className="text-xs text-gray-500">({moduleTasks.length})</span>
+                          )}
+                          {showSummaryBar && (() => {
+                            const summary = getModuleSummary(Number(node.id));
+                            if (summary) {
+                              return (
+                                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                  {summary.percentage}% ({summary.completedCount}/{summary.taskCount})
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                        
+                        {/* Progress Bar for collapsed modules */}
+                        {showSummaryBar && (() => {
+                          const summary = getModuleSummary(Number(node.id));
+                          if (summary) {
+                            return (
+                              <div className="mt-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div 
+                                  className="h-full rounded-full transition-all duration-300"
+                                  style={{ 
+                                    width: `${summary.percentage}%`,
+                                    background: summary.percentage === 100 
+                                      ? 'linear-gradient(to right, #10b981, #059669)' 
+                                      : summary.percentage >= 50
+                                        ? 'linear-gradient(to right, #3b82f6, #2563eb)'
+                                        : 'linear-gradient(to right, #f59e0b, #d97706)'
+                                  }}
+                                />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Task Details Table - Only show for leaf nodes or expanded nodes with tasks */}
+                    {!showSummaryBar && moduleTasks.length > 0 && (
+                      <div className="px-2 pb-2">
+                        <div className="text-[11px] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                          {/* Table Header */}
+                          <div className="grid gap-1 bg-gray-50 dark:bg-gray-800 p-1.5 font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700" style={{ gridTemplateColumns: '80px 120px 90px 90px 90px 80px 80px 1fr' }}>
+                            <div className="truncate">Kode</div>
+                            <div className="truncate">Programmer</div>
+                            <div className="truncate">Scheduled</div>
+                            <div className="truncate">Due Date</div>
+                            <div className="truncate">Tanggal Realisasi</div>
+                            <div className="truncate">Status</div>
+                            <div className="truncate">Waktu Pengerjaan</div>
+                            <div className="truncate">Keterangan</div>
+                          </div>
+                          {/* Table Rows */}
+                          {moduleTasks.map((task, idx) => {
+                            const calculateWorkTime = () => {
+                              if (!task.startedAt) return '-';
+                              const endTime = task.approvedAt || new Date().toISOString();
+                              const start = new Date(task.startedAt);
+                              const end = new Date(endTime);
+                              const diffMs = end.getTime() - start.getTime();
+                              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                              const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                              const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                              
+                              if (diffDays > 0) return `${diffDays} hari ${diffHours} jam`;
+                              if (diffHours > 0) return `${diffHours} jam ${diffMins} menit`;
+                              return `${diffMins} menit`;
+                            };
+
+                            const calculateLateness = () => {
+                              if (task.status !== 'SELESAI' || !task.calculatedDueDate || !task.approvedAt) return null;
+                              const dueDate = new Date(task.calculatedDueDate);
+                              const approvedDate = new Date(task.approvedAt);
+                              if (approvedDate <= dueDate) return null;
+                              
+                              const diffMs = approvedDate.getTime() - dueDate.getTime();
+                              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                              const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                              
+                              if (diffDays > 0) return `Lebih waktu ${diffDays} hari`;
+                              if (diffHours > 0) return `Lebih waktu ${diffHours} jam`;
+                              return 'Tepat waktu';
+                            };
+
+                            const getStatusColor = () => {
+                              switch (task.status) {
+                                case 'SELESAI': return isCompletedLate(task) ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+                                case 'SEDANG_DIPROSES_USER':
+                                case 'SEDANG_DIPROSES_USER_PAUSED': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
+                                case 'MENUNGGU_REVIEW_PM': return 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300';
+                                default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+                              }
+                            };
+
+                            const getStatusLabel = () => {
+                              switch (task.status) {
+                                case 'SELESAI': return 'Selesai';
+                                case 'SEDANG_DIPROSES_USER': return 'Sedang Diproses';
+                                case 'SEDANG_DIPROSES_USER_PAUSED': return 'Paused';
+                                case 'MENUNGGU_REVIEW_PM': return 'Menunggu Review';
+                                case 'MENUNGGU_PROSES_USER': return 'Menunggu';
+                                default: return '-';
+                              }
+                            };
+
+                            const formatDateShort = (dateStr?: string) => {
+                              if (!dateStr) return '-';
+                              const d = new Date(dateStr);
+                              const day = String(d.getDate()).padStart(2, '0');
+                              const month = String(d.getMonth() + 1).padStart(2, '0');
+                              const year = d.getFullYear();
+                              return `${day}/${month}/${year}`;
+                            };
+
+                            return (
+                              <div
+                                key={task.id}
+                                className={`grid gap-1 p-1.5 text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 last:border-b-0 ${
+                                  idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800/50'
+                                }`}
+                                style={{ gridTemplateColumns: '80px 120px 90px 90px 90px 80px 80px 1fr' }}
+                              >
+                                <div className="truncate" title={task.kode || `#${task.id}`}>
+                                  {task.kode || `#${task.id}`}
+                                </div>
+                                <div className="truncate" title={task.pegawaiNama}>
+                                  {task.pegawaiNama}
+                                </div>
+                                <div className="truncate" title={formatDateShort(task.scheduleAt)}>
+                                  {formatDateShort(task.scheduleAt)}
+                                </div>
+                                <div className="truncate" title={formatDateShort(task.calculatedDueDate || undefined)}>
+                                  {formatDateShort(task.calculatedDueDate || undefined)}
+                                </div>
+                                <div className="truncate" title={formatDateShort(task.approvedAt || undefined)}>
+                                  {formatDateShort(task.approvedAt || undefined)}
+                                </div>
+                                <div className="truncate" title={getStatusLabel()}>
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusColor()}`}>
+                                    {getStatusLabel()}
+                                  </span>
+                                </div>
+                                <div className="truncate" title={calculateWorkTime()}>
+                                  {calculateWorkTime()}
+                                  {calculateLateness() && (
+                                    <div className="text-red-600 dark:text-red-400 font-medium mt-0.5">
+                                      {calculateLateness()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="truncate" title={task.keterangan || '-'}>
+                                  {task.keterangan || '-'}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Timeline Section */}
+            <div
+              ref={timelineRef}
+              className="overflow-x-auto overflow-y-hidden scroll-smooth"
+              style={{ width: 'calc(100% - 800px)', scrollSnapType: 'x mandatory' }}
+              onScroll={(e) => {
+                const headers = document.getElementById('date-headers');
+                if (headers) {
+                  headers.style.transform = `translateX(-${e.currentTarget.scrollLeft}px)`;
+                }
+              }}
+            >
+              <div style={{ width: `${dateColumns.length * colWidth}px`, minWidth: `${dateColumns.length * colWidth}px` }}>
+                {loading && (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
+                )}
+
+                {!loading && displayedModulesFlat.length === 0 && (
+                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    Pilih proyek untuk melihat gantt chart
+                  </div>
+                )}
+
+                {!loading && displayedModulesFlat.map((node) => {
+                  const moduleTasks = tasksByModule[Number(node.id)] || [];
+                  const hasChildren = modulesFlat.some((n) => String(n.parent) === String(node.id));
+                  const isExpanded = expandedIds.has(Number(node.id));
+                  
+                  // If module has children and is collapsed, show summary bar instead of individual tasks
+                  const showSummaryBar = hasChildren && !isExpanded;
+                  const summary = showSummaryBar ? getModuleSummary(Number(node.id)) : null;
+                  
+                  const rows = showSummaryBar ? [[]] : packTasksIntoRows(moduleTasks);
+                  
+                  // Calculate height: module name + task details table (same as left column)
+                  let rowHeight = 40; // Base height for module name
+                  if (showSummaryBar) {
+                    // Add extra height for progress bar in collapsed modules
+                    rowHeight = 55; // Module name + progress bar
+                  } else if (moduleTasks.length > 0) {
+                    // Check if any task has lateness info
+                    const hasLateTask = moduleTasks.some(t => {
+                      if (t.status !== 'SELESAI' || !t.calculatedDueDate || !t.approvedAt) return false;
+                      return new Date(t.approvedAt) > new Date(t.calculatedDueDate);
+                    });
+                    // Add height for task details table
+                    const rowHeightPerTask = hasLateTask ? 40 : 32; // Taller rows if there's lateness info
+                    rowHeight += 30 + (moduleTasks.length * rowHeightPerTask); // Header + rows
+                  }
+
+                  return (
+                    <div
+                      key={String(node.id)}
+                      className="relative bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
+                      style={{ minHeight: `${rowHeight}px` }}
+                    >
+                      {/* Grid lines */}
+                      <div className="absolute inset-0 flex">
+                        {dateColumns.map((date, idx) => (
+                          <div
+                            key={idx}
+                            style={{ width: `${colWidth}px`, minWidth: `${colWidth}px` }}
+                            className={`border-r border-gray-100 dark:border-gray-800 last:border-r-0 h-full ${
+                              isToday(date) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Summary Bar for collapsed modules */}
+                      {showSummaryBar && summary && summary.minDate && summary.maxDate && (
+                        <div className="absolute" style={{ top: '10px', left: 0, right: 0 }}>
+                          {(() => {
+                            const startColIdx = getColumnIndex(summary.minDate);
+                            const endColIdx = getColumnIndex(summary.maxDate);
+                            const widthCols = Math.max(1, endColIdx - startColIdx + 1);
+                            const totalWidth = widthCols * colWidth - (DAY_GAP * 2);
+                            const leftPos = startColIdx * colWidth + DAY_GAP;
+
+                            return (
+                              <div
+                                className="absolute rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{
+                                  left: `${leftPos}px`,
+                                  width: `${totalWidth}px`,
+                                  height: '24px',
+                                  background: 'linear-gradient(to right, #3b82f6, #8b5cf6)',
+                                  opacity: 0.7,
+                                  zIndex: 2,
+                                  border: '2px solid #1e40af'
+                                }}
+                                title={`${summary.completedCount}/${summary.taskCount} tasks completed (${summary.percentage}%)`}
+                              >
+                                <div className="flex items-center justify-center h-full text-white text-xs font-medium">
+                                  {summary.percentage}% ({summary.completedCount}/{summary.taskCount})
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Task Bars (only shown when expanded) */}
+                      {!showSummaryBar && (
+                      <div className="absolute inset-0" style={{ top: '40px' }}>
+                        {rows.map((rowTasks, rowIdx) =>
+                          rowTasks.map((task) => {
+                            const targetStyle = getTaskStyle(task);
+                            const actualBarStyle = getActualBarStyle(task);
+                            const taskColor = getActualTaskColor(task);
+                            const taskCode = task.kode || `#${task.id}`;
+                            const taskName = task.keterangan || `Task #${task.id}`;
+                            const formatDate = (dateStr: string) => {
+                              const d = new Date(dateStr);
+                              return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                            };
+
+                            const isLate = isCompletedLate(task);
+                            const topOffset = rowIdx * 50 + 10;
+
+                            const borderColor = task.status === 'SELESAI'
+                              ? (isLate ? '#ef4444' : '#16a34a')
+                              : task.status === 'SEDANG_DIPROSES_USER' || task.status === 'SEDANG_DIPROSES_USER_PAUSED'
+                                ? '#ca8a04'
+                                : task.status === 'MENUNGGU_REVIEW_PM'
+                                  ? '#c026d3'
+                                  : '#6b7280';
+
+                            const targetLeft = parseInt(targetStyle.left);
+                            const targetRight = targetLeft + parseInt(targetStyle.width);
+                            const actualLeft = actualBarStyle.width !== '0px' ? parseInt(actualBarStyle.left) : targetLeft;
+                            const actualRight = actualBarStyle.width !== '0px' ? actualLeft + parseInt(actualBarStyle.width) : targetRight;
+                            const wrapperLeft = Math.min(targetLeft, actualLeft);
+                            const wrapperRight = Math.max(targetRight, actualRight);
+                            const wrapperWidth = wrapperRight - wrapperLeft;
+
+                            return (
+                              <React.Fragment key={task.id}>
+                                {/* Wrapper border */}
+                                <div
+                                  className="absolute pointer-events-none rounded"
+                                  style={{
+                                    left: `${wrapperLeft}px`,
+                                    width: `${wrapperWidth}px`,
+                                    top: `${topOffset}px`,
+                                    height: '32px',
+                                    boxShadow: `0 0 1px 1.5px white, 0 0 1px 2.5px ${borderColor}`,
+                                    zIndex: 3
+                                  }}
+                                />
+
+                                {/* Target bar (top half) */}
+                                <div
+                                  className="absolute cursor-pointer rounded"
+                                  style={{
+                                    left: targetStyle.left,
+                                    width: targetStyle.width,
+                                    top: `${topOffset}px`,
+                                    height: '16px',
+                                    zIndex: 2
+                                  }}
+                                  onClick={() => openDetail(task)}
+                                  title={`[${taskCode}] ${taskName}\nTarget: ${formatDate(task.scheduleAt)} - ${task.calculatedDueDate ? formatDate(task.calculatedDueDate) : 'N/A'}`}
+                                >
+                                  <div className="w-full h-full bg-blue-400 gantt-stripes flex items-center px-1 text-xs text-blue-900 font-medium hover:shadow-md transition-shadow rounded">
+                                    <span className="truncate block w-full opacity-80 text-[10px]">
+                                      {taskCode}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Actual bar (bottom half) */}
+                                {actualBarStyle.width !== '0px' && (
+                                  <div
+                                    className="absolute cursor-pointer rounded"
+                                    style={{
+                                      left: actualBarStyle.left,
+                                      width: actualBarStyle.width,
+                                      top: `${topOffset + 16}px`,
+                                      height: '16px',
+                                      zIndex: 1
+                                    }}
+                                    onClick={() => openDetail(task)}
+                                    title={`[${taskCode}] ${taskName}\nPegawai: ${task.pegawaiNama}\nStatus: ${task.status}`}
+                                  >
+                                    <div className="relative w-full h-full hover:shadow-md transition-shadow overflow-hidden rounded">
+                                      {/* Work part (solid) */}
+                                      {actualBarStyle.workWidth !== '0px' && (
+                                        <div
+                                          className={`absolute left-0 top-0 h-full ${taskColor}`}
+                                          style={{ width: actualBarStyle.workWidth }}
+                                        />
+                                      )}
+                                      {/* Review part (striped) */}
+                                      {actualBarStyle.reviewWidth !== '0px' && (
+                                        <div
+                                          className={`absolute top-0 h-full ${taskColor} gantt-stripes`}
+                                          style={{
+                                            left: actualBarStyle.workWidth,
+                                            width: actualBarStyle.reviewWidth
+                                          }}
+                                        />
+                                      )}
+                                      <div className="absolute inset-0 flex items-center px-1">
+                                        <span className="truncate text-[10px] text-white font-medium">
+                                          {task.pegawaiNama}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            );
+                          })
+                        )}
+                      </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      {/* Detail Modal */}
+      <Modal isOpen={detailOpen} onClose={closeDetail} className="max-w-2xl">
+        {detailItem && (
+          <div className="space-y-4 p-6">
+            {/* Header */}
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Detail Task
+            </h2>
+
+            {/* Task Info Grid */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Task ID:</p>
+                <p className="font-medium text-gray-900 dark:text-white">{detailItem.id}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Proyek:</p>
+                <p className="font-medium text-gray-900 dark:text-white">{detailItem.proyekNama}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Kode:</p>
+                <p className="font-medium text-gray-900 dark:text-white">{detailItem.kode || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Modul:</p>
+                <p className="font-medium text-gray-900 dark:text-white">{detailItem.moduleNama}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Scheduled:</p>
+                <p className="font-medium text-gray-900 dark:text-white text-xs">{formatDateDisplay(detailItem.scheduleAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">User:</p>
+                <p className="font-medium text-gray-900 dark:text-white">{detailItem.pegawaiNama}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Due Date:</p>
+                <p className="font-medium text-gray-900 dark:text-white text-xs">{detailItem.calculatedDueDate ? formatDateDisplay(detailItem.calculatedDueDate) : '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Tipe:</p>
+                <div>{tasklistTypeBadge(detailItem.tasklistType)}</div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Kompleksitas:</p>
+                <div>{taskComplexityBadge(detailItem.taskComplexity)}</div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Status:</p>
+                <div>{statusBadge(detailItem.status)}</div>
+              </div>
+            </div>
+
+            {/* Keterangan */}
+            <div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Keterangan:</p>
+              <p className="text-sm text-gray-900 dark:text-white">{detailItem.keterangan || '-'}</p>
+            </div>
+
+            {/* Riwayat Perubahan */}
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">Riwayat Perubahan</p>
+              {detailLogsLoading ? (
+                <p className="text-xs text-gray-500">Memuat riwayat...</p>
+              ) : detailLogs.length === 0 ? (
+                <p className="text-xs text-gray-500">Tidak ada riwayat perubahan</p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {detailLogs.map((log) => (
+                    <div key={log.id} className="text-xs border-l-2 border-gray-300 dark:border-gray-600 pl-2 py-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {log.action}
+                        </p>
+                        {log.status && statusBadge(log.status)}
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 text-[10px]">
+                        {log.userNama || 'System'} • {fmtWaktuFromString(log.waktu)}
+                      </p>
+                      {log.keterangan && (
+                        <p className="text-gray-700 dark:text-gray-300 text-[10px] mt-0.5">{log.keterangan}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={closeDetail}
+                className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </>
+  );
+}
