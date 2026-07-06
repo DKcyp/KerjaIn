@@ -23,8 +23,8 @@ export default function AuthLayout({
               <div className="flex flex-col items-center max-w-xs">
                 <Link href="/" className="block mb-4">
                   <Image
-                    width={80}
-                    height={80}
+                    width={140}
+                    height={140}
                     src="/images/logo/LogoTanpaText.png"
                     alt="Logo"
                   />
