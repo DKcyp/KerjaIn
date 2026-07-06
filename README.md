@@ -1,8 +1,6 @@
-# Sistem Manajemen Logbook
+# Sistem Manajemen Tasklist
 # test 123
 Sistem manajemen berbasis web yang komprehensif dibangun dengan **Next.js 15**, **React 19**, **TypeScript**, dan **Tailwind CSS V4**. Sistem ini menyediakan manajemen tugas, pelacakan proyek, integrasi kalender, dan kemampuan pelaporan dengan kontrol akses berbasis peran.
-
-![Logbook Management System Preview](./banner.png)
 / update
 ## 📖 Dokumentasi
 
