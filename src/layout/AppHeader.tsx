@@ -96,7 +96,7 @@ const AppHeader: React.FC = () => {
               />
             ) : (
               <Image
-                src="/richz-log-logo.png"
+                src="/images/logo/LogoTanpaText.png"
                 alt="KerjaIn Logo"
                 width={50}
                 height={50}

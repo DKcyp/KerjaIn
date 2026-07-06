@@ -1,11 +1,11 @@
 {
-  "name": "Richz-Log",
-  "short_name": "Richz-Log",
+  "name": "KerjaIn",
+  "short_name": "KerjaIn",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0ea5e9",
-  "description": "Richz-Log - Project task tracking and reporting",
+  "description": "KerjaIn - Tasklist dan pelaporan pekerjaan",
   "icons": [
     {
       "src": "/favicon.png",
@@ -13,7 +13,7 @@
       "type": "image/png"
     },
     {
-      "src": "/richz-log-logo.png",
+      "src": "/images/logo/LogoTanpaText.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any"
